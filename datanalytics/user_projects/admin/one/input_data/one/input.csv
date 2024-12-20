@@ -1,0 +1,5 @@
+Name, Age, Credit, Early_payment_flag, Observation_date, Customer_ID, Dog
+Georgi, 18, 20, 1, 2024-01, 0610
+Ivan, 35, 100, 0, 2024-01, 9870
+Georgi, 18, 0, 0, 2024-02, 0610
+Ivan, 35, 100, 0, 2024-02, 9870

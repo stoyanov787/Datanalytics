@@ -1,0 +1,32 @@
+{
+    "criterion_column": "",
+    "missing_treatment": {
+        "Info": "Missing"
+    },
+    "observation_date_column": "",
+    "secondary_criterion_columns": [
+        "",
+        ""
+    ],
+    "t1df": "",
+    "t2df": "",
+    "t3df": "",
+    "periods_to_exclude": [],
+    "columns_to_exclude": [],
+    "lr_features": [],
+    "lr_features_to_include": [],
+    "trees_features_to_include": [],
+    "trees_features_to_exclude": [],
+    "cut_offs": {
+        "xgb": [],
+        "lr": [],
+        "dt": [],
+        "rf": []
+    },
+    "under_sampling": 1,
+    "optimal_binning_columns": [],
+    "main_table": "",
+    "columns_to_include": [],
+    "custom_calculations": [],
+    "additional_tables": []
+}
