@@ -149,3 +149,6 @@ EMAIL_HOST_PASSWORD = getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = f'My Domain <{EMAIL_HOST_USER}>'
 
 MEDIA_ROOT = path.join(BASE_DIR, 'user_projects')
+
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
