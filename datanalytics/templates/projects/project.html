@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load static %}
+
+<div class="container-fluid mt-5">
+    <h1 class="fw-bold mb-5">{{ project.name }}</h1>
+
+    <section class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <img class="card-img-top mb-3" src="{% static 'csv.svg' %}" alt="Create a New Project">
+                    <h3 class="card-title mb-3">Input dataset</h3>
+                    <form action="/projects/download_csv" method="get">
+                        <input type="hidden" name="project_name" value="{{ project.name }}">
+                        <input type="submit" value="Download" class="green-button btn btn-success mb-3">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+{% endblock content %}
