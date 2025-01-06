@@ -20,6 +20,27 @@
             </div>
         </div>
     </section>
+
+    <section class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <img class="card-img-top mb-3" src="{% static 'ai.svg' %}" alt="Create a New Project">
+                    <h3 class="card-title mb-3">Gizmo AI</h3>
+                    <form action="/projects/prep/" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="project_name" value="{{ project.name }}">
+                        <input type="submit" value="Prep" class="green-button btn btn-success mb-3">
+                    </form>
+                    <form action="/projects/trainandeval/" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="project_name" value="{{ project.name }}">
+                        <input type="submit" value="Train and Eval" class="green-button btn btn-success mb-3">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
 {% endblock content %}
