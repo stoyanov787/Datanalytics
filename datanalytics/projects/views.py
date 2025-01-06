@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from .forms import ParamForm, ProjectForm
 from .models import Project
+from .tasks import data_preparation
 import pandas as pd
 
 def param(request):
@@ -59,6 +60,14 @@ def download_csv(request):
     df.to_csv(response, index=False)
     
     return response
+
+def prep(request):
+    project_name = request.POST.get("project_name")
+    result = data_preparation.delay(project_name)
+    task_output = result.get()  # This will block until task completes
+    return HttpResponse(f"Output: {task_output}")
+
+
 
 
     
