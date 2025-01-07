@@ -12,12 +12,12 @@ def param(request):
         return render(request, 'param/param.html', context)
     else:
         return HttpResponse("You are not logged in")
-    
 
-# make this class with form View(form view to Use model Project)
+
 def observation_date_column_choice(request):
-    form = ParamForm(request=request)
-    return HttpResponse(form["t1df"])
+    context = {}
+    context['form'] = ParamForm(request=request)
+    return render(request, 'param/dependent_fields.html', context)
 
 def project_creation(request):
     if request.user.is_authenticated:
@@ -66,11 +66,4 @@ def prep(request):
     result = data_preparation.delay(project_name)
     task_output = result.get()  # This will block until task completes
     return HttpResponse(f"Output: {task_output}")
-
-
-
-
     
-
-    
-
