@@ -2,9 +2,14 @@ from django import forms
 from .models import Project
 import pandas as pd
 
+class ProjectForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['name', 'input_dataframe', 'param_file']
+
 
 class ParamForm(forms.Form):
-    def t1df_choice(self):
+    def tdf_choice(self):
         observation_date_column = self.request.GET.get(
             'observation_date_column')
         if not observation_date_column:
@@ -21,7 +26,7 @@ class ParamForm(forms.Form):
         super(ParamForm, self).__init__(*args, **kwargs)
 
         project = Project.objects.get(
-            user=self.request.user, name="one")  # hard-coded name
+            user=self.request.user, name="hello")  # hard-coded name
         self.df = pd.read_csv(project.input_dataframe)
         columns = list(self.df.columns)
         columns_choices = list(zip(columns, columns))
@@ -33,4 +38,14 @@ class ParamForm(forms.Form):
         self.fields['secondary_criterion_columns'] = forms.ChoiceField(
             choices=columns_choices)
         self.fields['t1df'] = forms.ChoiceField(
-            choices=self.t1df_choice)
+            choices=self.tdf_choice)
+        self.fields['t2df'] = forms.ChoiceField(
+            choices=self.tdf_choice)
+        self.fields['t3df'] = forms.ChoiceField(
+            choices=self.tdf_choice)
+        self.fields['periods_to_exclude'] = forms.MultipleChoiceField(
+        choices=self.tdf_choice,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Periods to exclude"
+    )
