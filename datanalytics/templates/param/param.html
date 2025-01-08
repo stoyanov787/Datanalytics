@@ -12,10 +12,17 @@
     integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
     crossorigin="anonymous"></script>
   {% load widget_tweaks %}
+  <style>
+  .multi-select-container {
+    max-height: 100px;
+    overflow-y: auto;
+  }
 
+  </style>
 </head>
 
 <body>
+
   <div class="container mt-4">
     <form action="/" method="POST">
       {% csrf_token %}
@@ -26,8 +33,7 @@
 
       <div class="mb-3">
         {{ form.observation_date_column.label_tag }}
-        {% render_field form.observation_date_column class="form-select" hx-get="observation_date_column_choice/"
-        hx-target="#dependent-fields" %}
+        {% render_field form.observation_date_column class="form-select" hx-get="observation_date_column_choice/" hx-target="#dependent-fields" %}
       </div>
 
       <div class="mb-3">
@@ -52,17 +58,43 @@
         </div>
         <div class="mb-3">
           {{ form.periods_to_exclude.label_tag }}
-          <div id="periods_to_exclude_style">
+          <div class="multi-select-container">
 
-          {% for checkbox in form.periods_to_exclude %}
-          <div class="form-check">
-            {{ checkbox }}
-          </div>
-          {% endfor %}
+            {% for checkbox in form.periods_to_exclude %}
+            <div class="form-check">
+              {{ checkbox }}
+            </div>
+            {% endfor %}
           </div>
 
         </div>
-      </div>
+              </div>
+        <div class="mb-3">
+          {{ form.columns_to_exclude.label_tag }}
+          <div class="multi-select-container">
+
+            {% for checkbox in form.columns_to_exclude %}
+            <div class="form-check">
+              {{ checkbox }}
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+
+        <div class="mb-3">
+          {{ form.optimal_binning_columns.label_tag }}
+          <div class="multi-select-container">
+
+            {% for checkbox in form.optimal_binning_columns %}
+            <div class="form-check">
+              {{ checkbox }}
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+
 
       <button type="submit" class="btn btn-success">Submit</button>
     </form>
