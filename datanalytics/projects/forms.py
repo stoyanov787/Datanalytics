@@ -49,3 +49,15 @@ class ParamForm(forms.Form):
         required=True,
         label="Periods to exclude"
     )
+        self.fields['columns_to_exclude'] = forms.MultipleChoiceField(
+        choices=columns_choices,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Columns to exclude"
+    )
+        self.fields['optimal_binning_columns'] = forms.MultipleChoiceField(
+        choices=columns_choices,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Optimal binning columns"
+    )
