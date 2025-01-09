@@ -63,7 +63,9 @@ def download_csv(request):
 
 def prep(request):
     project_name = request.POST.get("project_name")
-    result = data_preparation.delay(project_name)
+    project = request.user.get_username() + "_" + project_name
+    print(f"Project name: {project_name}")
+    result = data_preparation.delay(project)
     task_output = result.get()  # This will block until task completes
     return HttpResponse(f"Output: {task_output}")
-    
+
