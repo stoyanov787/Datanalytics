@@ -61,11 +61,51 @@ def download_csv(request):
     
     return response
 
-def prep(request):
-    project_name = request.POST.get("project_name")
-    project = request.user.get_username() + "_" + project_name
-    print(f"Project name: {project_name}")
-    result = data_preparation.delay(project)
-    task_output = result.get()  # This will block until task completes
-    return HttpResponse(f"Output: {task_output}")
+from django.http import JsonResponse
+from celery.result import AsyncResult
 
+from django.http import JsonResponse
+import json
+
+from django.http import JsonResponse
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+def prep(request):
+    if request.method == 'POST':
+        try:
+            project_name = request.POST.get("project_name")
+            
+            if not project_name:
+                return JsonResponse({'error': 'Project name is required'}, status=400)
+            
+            project = request.user.get_username() + "_" + project_name
+            result = data_preparation.delay(project)
+            return JsonResponse({'task_id': result.id})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+def task_status(request, task_id):
+    result = AsyncResult(task_id)
+    status = result.status
+    
+    response = {
+        'status': status.lower(),  # Celery returns uppercase status
+        'task_id': task_id,
+    }
+    
+    if status == 'SUCCESS':
+        response['output'] = result.result
+    elif status == 'FAILURE':
+        response['error'] = str(result.result)
+    elif status == 'PENDING':
+        response['message'] = 'Task is pending'
+    elif status == 'STARTED':
+        response['message'] = 'Task has started'
+    
+    return JsonResponse(response)
