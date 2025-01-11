@@ -1,7 +1,145 @@
 {% extends "base.html" %}
 
-{% block content %}
 {% load static %}
+{% block extra_js %}
+<script src="{% static 'js/prep_handler.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<script>
+// Function to get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Function to handle the prep form submission
+function handlePrepSubmission(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitButton = form.querySelector('input[type="submit"]');
+    const statusDiv = document.getElementById('ai-status');
+    const statusMessage = statusDiv.querySelector('.status-message');
+    const spinner = statusDiv.querySelector('.spinner-border');
+    
+    // Disable submit button and show spinner
+    submitButton.disabled = true;
+    spinner.classList.remove('d-none');
+    statusMessage.textContent = 'Starting task...';
+    
+    // Create FormData from the form
+    const formData = new FormData(form);
+    
+    // Send the form data
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.task_id) {
+            console.log('Task started with ID:', data.task_id);
+            pollTaskStatus(data.task_id, statusMessage, spinner, submitButton);
+        } else {
+            throw new Error('No task ID received');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusMessage.textContent = `Error: ${error.message}`;
+        spinner.classList.add('d-none');
+        submitButton.disabled = false;
+    });
+}
+
+// Function to poll task status
+function pollTaskStatus(taskId, statusMessage, spinner, submitButton) {
+    console.log('Starting to poll task:', taskId);
+    
+    const pollInterval = setInterval(() => {
+        fetch(`/projects/task-status/${taskId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Task status update:', data);
+            
+            switch(data.status) {
+                case 'success':
+                case 'done':
+                    clearInterval(pollInterval);
+                    statusMessage.textContent = 'Processing complete!';
+                    spinner.classList.add('d-none');
+                    submitButton.disabled = false;
+                    break;
+                    
+                case 'failure':
+                case 'failed':
+                    clearInterval(pollInterval);
+                    statusMessage.textContent = data.error ? `Error: ${data.error}` : 'Task failed';
+                    spinner.classList.add('d-none');
+                    submitButton.disabled = false;
+                    break;
+                    
+                case 'started':
+                    statusMessage.textContent = 'Task is running...';
+                    break;
+                    
+                case 'pending':
+                    statusMessage.textContent = 'Task is pending...';
+                    break;
+                    
+                default:
+                    statusMessage.textContent = `Current status: ${data.status}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking task status:', error);
+            clearInterval(pollInterval);
+            statusMessage.textContent = 'Error checking task status';
+            spinner.classList.add('d-none');
+            submitButton.disabled = false;
+        });
+    }, 2000);
+}
+
+// Add event listener when document is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const prepForm = document.getElementById('prep-form');
+    if (prepForm) {
+        prepForm.addEventListener('submit', handlePrepSubmission);
+    }
+});
+</script>
 
 <div class="container-fluid mt-5">
     <h1 class="fw-bold mb-5">{{ project.name }}</h1>
@@ -22,25 +160,27 @@
     </section>
 
     <section class="row justify-content-center mb-5">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <img class="card-img-top mb-3" src="{% static 'ai.svg' %}" alt="Create a New Project">
-                    <h3 class="card-title mb-3">Gizmo AI</h3>
-                    <form action="/projects/prep/" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="project_name" value="{{ project.name }}">
-                        <input type="submit" value="Prep" class="green-button btn btn-success mb-3">
-                    </form>
-                    <form action="/projects/trainandeval/" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="project_name" value="{{ project.name }}">
-                        <input type="submit" value="Train and Eval" class="green-button btn btn-success mb-3">
-                    </form>
-                </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <!-- Replace the existing ai-status div with this -->
+<div id="ai-status" class="text-center mb-3">
+    <h5 class="status-message">Ready to start</h5>
+    <div class="spinner-border text-success d-none" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+                <h3 class="card-title mb-3">Gizmo AI</h3>
+                <form action="/projects/prep/" method="post" id="prep-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="project_name" value="{{ project.name }}">
+                    <input type="submit" value="Prep" class="green-button btn btn-success mb-3">
+                </form>
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
 </div>
 
 {% endblock content %}
