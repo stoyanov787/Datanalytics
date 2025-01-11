@@ -7,8 +7,7 @@ logger = get_task_logger(__name__)
 @shared_task()
 def data_preparation(project_name):
     env = 'gizmo'
-    #command = f'conda run -n {env} python main.py --project {project_name} --data_prep_module standard'
-    command = "sleep 10"
+    command = f'conda run -n {env} python main.py --project {project_name} --data_prep_module standard'
     working_dir = os.path.join(os.getcwd(), 'gizmo')
 
     logger.info(f"\n\nRunning command: {command} in directory: {working_dir}\n\n")
