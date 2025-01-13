@@ -7,7 +7,6 @@
 
 {% block content %}
 <script>
-// Function to get CSRF token from cookies
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -23,16 +22,15 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Function to handle the prep form submission
-function handlePrepSubmission(event) {
+function handleFormSubmission(event, formType) {
     event.preventDefault();
     
     const form = event.target;
     const submitButton = form.querySelector('input[type="submit"]');
-    const statusDiv = document.getElementById('ai-status');
+    const statusDiv = document.getElementById(`${formType}-status`);
     const statusMessage = statusDiv.querySelector('.status-message');
     const spinner = statusDiv.querySelector('.spinner-border');
-    const resultDiv = document.getElementById('result-info');
+    const resultDiv = document.getElementById(`${formType}-result-info`);
     
     // Hide result info if it was shown before
     resultDiv.classList.add('d-none');
@@ -42,7 +40,6 @@ function handlePrepSubmission(event) {
     spinner.classList.remove('d-none');
     statusMessage.textContent = 'Starting task...';
     
-    // Create FormData from the form
     const formData = new FormData(form);
     
     fetch(form.action, {
@@ -65,7 +62,7 @@ function handlePrepSubmission(event) {
         if (data.task_id) {
             console.log('Task started with ID:', data.task_id);
             const projectName = formData.get('project_name');
-            pollTaskStatus(data.task_id, statusMessage, spinner, submitButton, resultDiv, projectName);
+            pollTaskStatus(data.task_id, statusMessage, spinner, submitButton, resultDiv, projectName, formType);
         } else {
             throw new Error('No task ID received');
         }
@@ -78,8 +75,7 @@ function handlePrepSubmission(event) {
     });
 }
 
-// Function to poll task status
-function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv, projectName) {
+function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv, projectName, formType) {
     console.log('Starting to poll task:', taskId);
     
     const pollInterval = setInterval(() => {
@@ -106,10 +102,10 @@ function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv,
                     submitButton.disabled = false;
                     
                     // Show output path
-                    const pathInput = resultDiv.querySelector('input');
+                    const pathInput = resultDiv.querySelector('.output-path');
                     pathInput.value = data.output_path;
                     resultDiv.classList.remove('d-none');
-                    submitButton.value = 'Re-run';
+                    submitButton.value = formType === 'prep' ? 'Re-prep' : 'Re-run train and eval';
                     break;
                     
                 case 'failure':
@@ -142,13 +138,12 @@ function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv,
     }, 2000);
 }
 
-// Function to copy path to clipboard
-function copyPath() {
-    const pathInput = document.querySelector('#output-path');
+function copyPath(formType) {
+    const pathInput = document.querySelector(`#${formType}-output-path`);
     pathInput.select();
     document.execCommand('copy');
     
-    const copyButton = document.querySelector('#copy-button');
+    const copyButton = document.querySelector(`#${formType}-copy-button`);
     const originalText = copyButton.textContent;
     copyButton.textContent = 'Copied!';
     setTimeout(() => {
@@ -156,16 +151,16 @@ function copyPath() {
     }, 2000);
 }
 
-// Add event listener when document is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const prepForm = document.getElementById('prep-form');
+    const trainEvalForm = document.getElementById('train-eval-form');
+    
     if (prepForm) {
-        prepForm.addEventListener('submit', handlePrepSubmission);
+        prepForm.addEventListener('submit', (e) => handleFormSubmission(e, 'prep'));
     }
     
-    const copyButton = document.getElementById('copy-button');
-    if (copyButton) {
-        copyButton.addEventListener('click', copyPath);
+    if (trainEvalForm) {
+        trainEvalForm.addEventListener('submit', (e) => handleFormSubmission(e, 'train-eval'));
     }
 });
 </script>
@@ -189,36 +184,61 @@ document.addEventListener('DOMContentLoaded', () => {
     </section>
 
     <section class="row justify-content-center mb-5">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <img class="card-img-top mb-3" src="{% static 'ai.svg' %}" alt="AI Processing">
-                <div id="ai-status" class="text-center mb-3">
-                    <h5 class="status-message">{% if output_path %}Processing complete!{% else %}Ready to start{% endif %}</h5>
-                    <div class="spinner-border text-success d-none" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div id="result-info" class="mt-3 {% if not output_path %}d-none{% endif %}">
-                        <p class="mb-2">Output directory path:</p>
-                        <div class="input-group mb-3">
-                            <input type="text" id="output-path" class="form-control" readonly value="{{ output_path|default:'' }}">
-                            <button class="btn btn-outline-success" type="button" id="copy-button">
-                                Copy Path
-                            </button>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <img class="card-img-top mb-3" src="{% static 'ai.svg' %}" alt="AI Processing">
+                    <h3 class="card-title mb-3">Gizmo AI</h3>
+                    
+                    <!-- Prep Status Section -->
+                    <div id="prep-status" class="text-center mb-4">
+                        <h5 class="status-message">{% if output_path %}Processing complete!{% else %}Ready to start{% endif %}</h5>
+                        <div class="spinner-border text-success d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div id="prep-result-info" class="mt-3 {% if not output_path %}d-none{% endif %}">
+                            <p class="mb-2">Prep output directory:</p>
+                            <div class="input-group mb-3">
+                                <input type="text" id="prep-output-path" class="form-control output-path" readonly value="{{ output_path|default:'' }}">
+                                <button class="btn btn-outline-success" type="button" id="prep-copy-button" onclick="copyPath('prep')">
+                                    Copy Path
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Train/Eval Status Section -->
+                    <div id="train-eval-status" class="text-center mb-4">
+                        <h5 class="status-message">Ready for training</h5>
+                        <div class="spinner-border text-success d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div id="train-eval-result-info" class="mt-3 d-none">
+                            <p class="mb-2">Train/Eval output directory:</p>
+                            <div class="input-group mb-3">
+                                <input type="text" id="train-eval-output-path" class="form-control output-path" readonly>
+                                <button class="btn btn-outline-success" type="button" id="train-eval-copy-button" onclick="copyPath('train-eval')">
+                                    Copy Path
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form action="/projects/prep/" method="post" id="prep-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="project_name" value="{{ project.name }}">
+                        <input type="submit" value="{% if output_path %}Re-prep{% else %}Prep{% endif %}" class="green-button btn btn-success mb-3">
+                    </form>
+                    
+                    <form action="/projects/trainandeval/" method="post" id="train-eval-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="project_name" value="{{ project.name }}">
+                        <input type="submit" value="Train and eval" class="green-button btn btn-success mb-3">
+                    </form>
                 </div>
-                <h3 class="card-title mb-3">Gizmo AI</h3>
-                <form action="/projects/prep/" method="post" id="prep-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="project_name" value="{{ project.name }}">
-                    <input type="submit" value="{% if output_path %}Re-run{% else %}Prep{% endif %}" class="green-button btn btn-success mb-3">
-                </form>
             </div>
         </div>
-    </div>
-</section>
-
+    </section>
 </div>
 
 {% endblock content %}
