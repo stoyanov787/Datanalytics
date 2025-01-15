@@ -20,3 +20,4 @@ Check the http methods
 Use static for js/ css
 Import bootstrap and htmx and other styling frameworks by downloading them and then importing then(not using urls)
 Add tests
+Good .env file
