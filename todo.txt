@@ -1,6 +1,7 @@
 Add sweetviz
 Fix the prep
 Create project creation page.
+Add prep, train_and_eval and sweetviz file fields in my model.
 Check project names and file names for spaces.
 Make all time intensive tasks such as downloading files, generating files or sending emails with celery.
 Fix where I use GET request and where I use string in the url. Which one is better
