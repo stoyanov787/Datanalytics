@@ -8,6 +8,8 @@ __pycache__/
 
 # Windows/WSL Zone Identifier files
 *.zone.identifier
+*:Zone.Identifier
+**:Zone.Identifier
 
 # Distribution / packaging
 .Python
