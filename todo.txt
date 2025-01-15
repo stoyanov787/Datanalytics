@@ -17,3 +17,5 @@ Fix the github repo
 Add good readme
 When I run the model is POST, but when I re-run it is PATCH.
 Check the http methods
+Use static for js/ css
+Import bootstrap and htmx and other styling frameworks by downloading them and then importing then(not using urls)
