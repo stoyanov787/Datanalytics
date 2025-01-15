@@ -14,3 +14,5 @@ Add docker
 Have a development and production version (debug=False or True)
 Fix the github repo
 Add good readme
+When I run the model is POST, but when I re-run it is PATCH.
+Check the http methods
