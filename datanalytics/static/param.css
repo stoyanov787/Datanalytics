@@ -1,4 +1,5 @@
 #periods_to_exclude_style {
-    max-height: 50px;
-    overflow-y: auto;
+    max-height: 200px;
+    color: red;
+    background-color: blue;
 }
