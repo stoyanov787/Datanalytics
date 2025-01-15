@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Windows/WSL Zone Identifier files
+*.zone.identifier
+
 # Distribution / packaging
 .Python
 build/
