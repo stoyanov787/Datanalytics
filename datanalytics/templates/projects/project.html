@@ -22,6 +22,105 @@ function getCookie(name) {
     return cookieValue;
 }
 
+function disableButtons(prepRunning, trainEvalRunning) {
+    const prepButton = document.querySelector('#prep-form input[type="submit"]');
+    const trainEvalButton = document.querySelector('#train-eval-form input[type="submit"]');
+    
+    if (prepButton && trainEvalButton) {
+        if (prepRunning || trainEvalRunning) {
+            prepButton.disabled = true;
+            trainEvalButton.disabled = true;
+        }
+    }
+    
+    const prepStatus = document.querySelector('#prep-status');
+    const trainEvalStatus = document.querySelector('#train-eval-status');
+    
+    if (prepRunning && prepStatus) {
+        const spinner = prepStatus.querySelector('.spinner-border');
+        const statusMessage = prepStatus.querySelector('.status-message');
+        const resultInfo = document.querySelector('#prep-result-info');
+        
+        if (spinner) spinner.classList.remove('d-none');
+        if (statusMessage) statusMessage.textContent = 'Task is running...';
+        if (resultInfo) resultInfo.classList.add('d-none');
+    }
+    
+    if (trainEvalRunning && trainEvalStatus) {
+        const spinner = trainEvalStatus.querySelector('.spinner-border');
+        const statusMessage = trainEvalStatus.querySelector('.status-message');
+        const resultInfo = document.querySelector('#train-eval-result-info');
+        
+        if (spinner) spinner.classList.remove('d-none');
+        if (statusMessage) statusMessage.textContent = 'Task is running...';
+        if (resultInfo) resultInfo.classList.add('d-none');
+    }
+}
+
+function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv, projectName, formType) {
+    console.log('Starting to poll task:', taskId);
+    
+    const pollInterval = setInterval(() => {
+        fetch(`/projects/task-status/${taskId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Task status check failed');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Task status data:', data);
+            
+            if (data.status === 'running') {
+                // Continue polling
+                statusMessage.textContent = 'Task is running...';
+                spinner.classList.remove('d-none');
+                return;
+            }
+            
+            if (data.status === 'done' || data.status === 'success') {
+                clearInterval(pollInterval);
+                statusMessage.textContent = 'Processing complete!';
+                spinner.classList.add('d-none');
+                
+                if (data.output_path) {
+                    const pathInput = document.getElementById(`${formType}-output-path`);
+                    if (pathInput) {
+                        pathInput.value = data.output_path;
+                        document.getElementById(`${formType}-result-info`).classList.remove('d-none');
+                    }
+                }
+                
+                window.location.reload();
+            } else if (data.status === 'failure') {
+                clearInterval(pollInterval);
+                statusMessage.textContent = `Error: ${data.error || 'Task failed'}`;
+                statusMessage.classList.add('text-danger');
+                spinner.classList.add('d-none');
+            }
+            
+            // Always enable buttons on final states
+            document.querySelector('#prep-form input[type="submit"]').disabled = false;
+            document.querySelector('#train-eval-form input[type="submit"]').disabled = false;
+        })
+        .catch(error => {
+            console.error('Error checking task status:', error);
+            clearInterval(pollInterval);
+            statusMessage.textContent = 'Connection error. Please try again.';
+            statusMessage.classList.add('text-danger');
+            spinner.classList.add('d-none');
+            
+            // Enable buttons
+            document.querySelector('#prep-form input[type="submit"]').disabled = false;
+            document.querySelector('#train-eval-form input[type="submit"]').disabled = false;
+        });
+    }, 5000);
+}
+
 function handleFormSubmission(event, formType) {
     event.preventDefault();
     
@@ -32,13 +131,16 @@ function handleFormSubmission(event, formType) {
     const spinner = statusDiv.querySelector('.spinner-border');
     const resultDiv = document.getElementById(`${formType}-result-info`);
     
-    // Hide result info if it was shown before
-    resultDiv.classList.add('d-none');
+    // Clear any existing polling interval
+    if (statusMessage.dataset.pollInterval) {
+        clearInterval(parseInt(statusMessage.dataset.pollInterval));
+    }
     
-    // Disable submit button and show spinner
-    submitButton.disabled = true;
-    spinner.classList.remove('d-none');
-    statusMessage.textContent = 'Starting task...';
+    // Reset status message styling
+    statusMessage.classList.remove('text-danger', 'text-warning');
+    
+    // Disable both buttons and show spinner
+    disableButtons(formType === 'prep', formType === 'train-eval');
     
     const formData = new FormData(form);
     
@@ -59,24 +161,94 @@ function handleFormSubmission(event, formType) {
         return response.json();
     })
     .then(data => {
-        if (data.task_id) {
-            console.log('Task started with ID:', data.task_id);
+        if (data.status === 'success' && data.task_id) {
+            console.log(`Task started with ID: ${data.task_id}`);
+            console.log(`Message: ${data.message}`);
+            
+            statusMessage.textContent = data.message || 'Task started...';
             const projectName = formData.get('project_name');
             pollTaskStatus(data.task_id, statusMessage, spinner, submitButton, resultDiv, projectName, formType);
+        } else {
+            throw new Error(data.error || 'Invalid server response');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusMessage.textContent = `Error: ${error.message}`;
+        statusMessage.classList.remove('text-warning');
+        statusMessage.classList.add('text-danger');
+        spinner.classList.add('d-none');
+        // Re-enable both buttons on error
+        document.querySelector('#prep-form input[type="submit"]').disabled = false;
+        document.querySelector('#train-eval-form input[type="submit"]').disabled = false;
+    });
+}
+
+function analyzeSweetviz() {
+    const statusMessage = document.querySelector('#sweetviz-status .status-message');
+    const spinner = document.querySelector('#sweetviz-status .spinner-border');
+    const analyzeBtn = document.querySelector('#analyze-btn');
+    
+    // Clear any existing polling interval
+    if (statusMessage.dataset.pollInterval) {
+        clearInterval(parseInt(statusMessage.dataset.pollInterval));
+    }
+    
+    // Disable button and show spinner
+    if (analyzeBtn) analyzeBtn.disabled = true;
+    if (spinner) spinner.classList.remove('d-none');
+    if (statusMessage) {
+        statusMessage.textContent = 'Generating report...';
+        statusMessage.classList.remove('text-danger', 'text-warning');
+    }
+    
+    const formData = new FormData();
+    formData.append('project_name', '{{ project.name }}');
+    
+    fetch('/projects/analyze_sweetviz/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.task_id) {
+            pollSweetvizStatus(data.task_id);
         } else {
             throw new Error('No task ID received');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        statusMessage.textContent = `Error: ${error.message}`;
-        spinner.classList.add('d-none');
-        submitButton.disabled = false;
+        if (statusMessage) {
+            statusMessage.textContent = `Error: ${error.message}`;
+            statusMessage.classList.remove('text-warning');
+            statusMessage.classList.add('text-danger');
+        }
+        if (spinner) spinner.classList.add('d-none');
+        if (analyzeBtn) analyzeBtn.disabled = false;
     });
 }
 
-function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv, projectName, formType) {
-    console.log('Starting to poll task:', taskId);
+function pollSweetvizStatus(taskId) {
+    const statusMessage = document.querySelector('#sweetviz-status .status-message');
+    const spinner = document.querySelector('#sweetviz-status .spinner-border');
+    const analyzeBtn = document.querySelector('#analyze-btn');
+    
+    // Clear any existing polling interval
+    if (statusMessage.dataset.pollInterval) {
+        clearInterval(parseInt(statusMessage.dataset.pollInterval));
+    }
     
     const pollInterval = setInterval(() => {
         fetch(`/projects/task-status/${taskId}/`, {
@@ -91,69 +263,89 @@ function pollTaskStatus(taskId, statusMessage, spinner, submitButton, resultDiv,
             return response.json();
         })
         .then(data => {
-            console.log('Task status update:', data);
-            
-            switch(data.status) {
-                case 'success':
-                case 'done':
-                    clearInterval(pollInterval);
-                    statusMessage.textContent = 'Processing complete!';
-                    spinner.classList.add('d-none');
-                    submitButton.disabled = false;
-                    
-                    // Show output path
-                    const pathInput = resultDiv.querySelector('.output-path');
-                    pathInput.value = data.output_path;
-                    resultDiv.classList.remove('d-none');
-                    submitButton.value = formType === 'prep' ? 'Re-prep' : 'Re-run train and eval';
-                    break;
-                    
-                case 'failure':
-                case 'failed':
-                    clearInterval(pollInterval);
-                    statusMessage.textContent = data.error ? `Error: ${data.error}` : 'Task failed';
-                    spinner.classList.add('d-none');
-                    submitButton.disabled = false;
-                    break;
-                    
-                case 'started':
-                    statusMessage.textContent = 'Task is running...';
-                    break;
-                    
-                case 'pending':
-                    statusMessage.textContent = 'Task is pending...';
-                    break;
-                    
-                default:
-                    statusMessage.textContent = `Current status: ${data.status}`;
+            if (data.status === 'success' || data.status === 'done') {
+                clearInterval(pollInterval);
+                window.location.reload();
+            } else if (data.status === 'failure' || data.status === 'failed') {
+                clearInterval(pollInterval);
+                if (statusMessage) {
+                    statusMessage.textContent = data.error || 'Analysis failed. Please try again.';
+                    statusMessage.classList.remove('text-warning');
+                    statusMessage.classList.add('text-danger');
+                }
+                if (spinner) spinner.classList.add('d-none');
+                if (analyzeBtn) analyzeBtn.disabled = false;
             }
         })
         .catch(error => {
-            console.error('Error checking task status:', error);
-            clearInterval(pollInterval);
-            statusMessage.textContent = 'Error checking task status';
-            spinner.classList.add('d-none');
-            submitButton.disabled = false;
+            console.error('Error checking status:', error);
+            if (statusMessage) {
+                statusMessage.textContent = 'Connection error. Retrying in 5 seconds...';
+                statusMessage.classList.remove('text-danger');
+                statusMessage.classList.add('text-warning');
+            }
         });
-    }, 2000);
+    }, 5000); // Poll every 5 seconds
+    
+    // Store interval ID for cleanup
+    if (statusMessage) {
+        statusMessage.dataset.pollInterval = pollInterval;
+    }
 }
 
 function copyPath(formType) {
     const pathInput = document.querySelector(`#${formType}-output-path`);
-    pathInput.select();
-    document.execCommand('copy');
-    
-    const copyButton = document.querySelector(`#${formType}-copy-button`);
-    const originalText = copyButton.textContent;
-    copyButton.textContent = 'Copied!';
-    setTimeout(() => {
-        copyButton.textContent = originalText;
-    }, 2000);
+    if (pathInput) {
+        pathInput.select();
+        document.execCommand('copy');
+        
+        const copyButton = document.querySelector(`#${formType}-copy-button`);
+        if (copyButton) {
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'Copied!';
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+            }, 2000);
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const prepForm = document.getElementById('prep-form');
     const trainEvalForm = document.getElementById('train-eval-form');
+    
+    // Check for running tasks on page load
+    const prepTaskId = '{{ prep_task_id|default:"" }}';
+    const trainEvalTaskId = '{{ train_eval_task_id|default:"" }}';
+    const sweetvizTaskId = '{{ sweetviz_task_id|default:"" }}';
+    
+    if (prepTaskId) {
+        const statusMessage = document.querySelector('#prep-status .status-message');
+        const spinner = document.querySelector('#prep-status .spinner-border');
+        const submitButton = document.querySelector('#prep-form input[type="submit"]');
+        const resultDiv = document.getElementById('prep-result-info');
+        
+        if (statusMessage && spinner && submitButton && resultDiv) {
+            pollTaskStatus(prepTaskId, statusMessage, spinner, submitButton, resultDiv, '{{ project.name }}', 'prep');
+            disableButtons(true, false);
+        }
+    }
+    
+    if (trainEvalTaskId) {
+        const statusMessage = document.querySelector('#train-eval-status .status-message');
+        const spinner = document.querySelector('#train-eval-status .spinner-border');
+        const submitButton = document.querySelector('#train-eval-form input[type="submit"]');
+        const resultDiv = document.getElementById('train-eval-result-info');
+        
+        if (statusMessage && spinner && submitButton && resultDiv) {
+            pollTaskStatus(trainEvalTaskId, statusMessage, spinner, submitButton, resultDiv, '{{ project.name }}', 'train-eval');
+            disableButtons(false, true);
+        }
+    }
+    
+    if (sweetvizTaskId) {
+        pollSweetvizStatus(sweetvizTaskId);
+    }
     
     if (prepForm) {
         prepForm.addEventListener('submit', (e) => handleFormSubmission(e, 'prep'));
@@ -183,6 +375,48 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </section>
 
+<section class="row justify-content-center mb-5">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <img class="card-img-top mb-3" src="{% static 'analysis.svg' %}" alt="Data Analysis">
+                <h3 class="card-title mb-3">Data Analysis</h3>
+                
+                <!-- Sweetviz Status Section -->
+                <div id="sweetviz-status" class="text-center mb-4">
+                    <h5 class="status-message">{% if sweetviz_status == 'running' %}Generating report...{% else %}Ready to analyze{% endif %}</h5>
+                    <div class="spinner-border text-success {% if not sweetviz_status == 'running' %}d-none{% endif %}" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                {% if report_exists %}
+                    <button onclick="window.open('/projects/download_sweetviz?project_name={{ project.name }}')" 
+                            class="green-button btn btn-success mb-3">Download Report</button>
+                    <button onclick="window.open('/media/reports/{{ request.user.username }}/{{ request.user.username }}_{{ project.name }}.html', '_blank')" 
+                            class="green-button btn btn-success mb-3">Show Report</button>
+                    <button onclick="analyzeSweetviz()" 
+                            class="green-button btn btn-success mb-3" 
+                            disabled>Analysis Complete</button>
+                {% else %}
+                    <button onclick="window.open('/projects/download_sweetviz?project_name={{ project.name }}')" 
+                            class="green-button btn btn-success mb-3" 
+                            disabled>Download Report</button>
+                    <button onclick="window.open('/media/reports/{{ request.user.username }}/{{ request.user.username }}_{{ project.name }}.html', '_blank')" 
+                            class="green-button btn btn-success mb-3" 
+                            disabled>Show Report</button>
+                    <button onclick="analyzeSweetviz()" 
+                            id="analyze-btn"
+                            class="green-button btn btn-success mb-3" 
+                            {% if sweetviz_status == 'running' %}disabled{% endif %}>
+                        Analyze Data
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
     <section class="row justify-content-center mb-5">
         <div class="col-md-8">
             <div class="card">
@@ -191,49 +425,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="card-title mb-3">Gizmo AI</h3>
                     
                     <!-- Prep Status Section -->
-                    <div id="prep-status" class="text-center mb-4">
-                        <h5 class="status-message">{% if output_path %}Processing complete!{% else %}Ready to start{% endif %}</h5>
-                        <div class="spinner-border text-success d-none" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div id="prep-result-info" class="mt-3 {% if not output_path %}d-none{% endif %}">
-                            <p class="mb-2">Prep output directory:</p>
-                            <div class="input-group mb-3">
-                                <input type="text" id="prep-output-path" class="form-control output-path" readonly value="{{ output_path|default:'' }}">
-                                <button class="btn btn-outline-success" type="button" id="prep-copy-button" onclick="copyPath('prep')">
-                                    Copy Path
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Train/Eval Status Section -->
-                    <div id="train-eval-status" class="text-center mb-4">
-                        <h5 class="status-message">Ready for training</h5>
-                        <div class="spinner-border text-success d-none" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div id="train-eval-result-info" class="mt-3 d-none">
-                            <p class="mb-2">Train/Eval output directory:</p>
-                            <div class="input-group mb-3">
-                                <input type="text" id="train-eval-output-path" class="form-control output-path" readonly>
-                                <button class="btn btn-outline-success" type="button" id="train-eval-copy-button" onclick="copyPath('train-eval')">
-                                    Copy Path
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+<div id="prep-status" class="text-center mb-4">
+    <h5 class="status-message">{% if prep_status == 'running' %}Task is running...{% else %}Ready to start{% endif %}</h5>
+    <div class="spinner-border text-success {% if not prep_status == 'running' %}d-none{% endif %}" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div id="prep-result-info" class="mt-3 {% if not prep_output_path %}d-none{% endif %}">
+        <p class="mb-2">Prep output directory:</p>
+        <div class="input-group mb-3">
+            <input type="text" id="prep-output-path" class="form-control output-path" readonly value="{{ prep_output_path|default:'' }}">
+            <button class="btn btn-outline-success" type="button" id="prep-copy-button" onclick="copyPath('prep')">
+                Copy Path
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Train/Eval Status Section -->
+<div id="train-eval-status" class="text-center mb-4">
+    <h5 class="status-message">{% if train_eval_status == 'running' %}Task is running...{% else %}Ready for training{% endif %}</h5>
+    <div class="spinner-border text-success {% if not train_eval_status == 'running' %}d-none{% endif %}" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div id="train-eval-result-info" class="mt-3 {% if not train_eval_output_path %}d-none{% endif %}">
+        <p class="mb-2">Train/Eval output directory:</p>
+        <div class="input-group mb-3">
+            <input type="text" id="train-eval-output-path" class="form-control output-path" readonly value="{{ train_eval_output_path|default:'' }}">
+            <button class="btn btn-outline-success" type="button" id="train-eval-copy-button" onclick="copyPath('train-eval')">
+                Copy Path
+            </button>
+        </div>
+    </div>
+</div>
 
                     <form action="/projects/prep/" method="post" id="prep-form">
                         {% csrf_token %}
                         <input type="hidden" name="project_name" value="{{ project.name }}">
-                        <input type="submit" value="{% if output_path %}Re-prep{% else %}Prep{% endif %}" class="green-button btn btn-success mb-3">
+                        <input type="submit" value="{% if output_path %}Re-prep{% else %}Prep{% endif %}" class="green-button btn btn-success mb-3" {% if prep_status == 'running' or train_eval_status == 'running' %}disabled{% endif %}>
                     </form>
                     
                     <form action="/projects/trainandeval/" method="post" id="train-eval-form">
                         {% csrf_token %}
                         <input type="hidden" name="project_name" value="{{ project.name }}">
-                        <input type="submit" value="Train and eval" class="green-button btn btn-success mb-3">
+                        <input type="submit" value="Train and eval" class="green-button btn btn-success mb-3" {% if prep_status == 'running' or train_eval_status == 'running' %}disabled{% endif %}>
                     </form>
                 </div>
             </div>
