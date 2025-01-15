@@ -11,3 +11,6 @@ Add Sphinx docstrings and commnts. Sphinx docstrings to be vizualized with html
 Make the code secure
 Make the code optimal and clean
 Add docker 
+Have a development and production version (debug=False or True)
+Fix the github repo
+Add good readme
