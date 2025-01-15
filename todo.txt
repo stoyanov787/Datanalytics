@@ -1,0 +1,13 @@
+Add sweetviz
+Fix the prep
+Create project creation page.
+Check project names and file names for spaces.
+Make all time intensive tasks such as downloading files, generating files or sending emails with celery.
+Fix where I use GET request and where I use string in the url. Which one is better
+Fix the email sending
+Create Profile menu
+Create password revcovery
+Add Sphinx docstrings and commnts. Sphinx docstrings to be vizualized with html
+Make the code secure
+Make the code optimal and clean
+Add docker 
