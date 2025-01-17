@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="fw-bold mb-5">Profile</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" 
+                                   name="email" 
+                                   class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                   id="id_email" 
+                                   value="{{ form.email.value|default:'' }}"
+                                   readonly>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" 
+                                   name="username" 
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                   id="id_username" 
+                                   value="{{ form.username.value|default:'' }}"
+                                   placeholder="Enter username">
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-success w-100">Save Changes</button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 border-top pt-3">
+                        <h6 class="mb-3">Account Management</h6>
+                        <a href="{% url 'password_change' %}" class="btn btn-outline-success w-100 mb-2">Change Password</a>
+                        <form method="post" action="{% url 'logout' %}" class="mt-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger w-100">Sign Out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
