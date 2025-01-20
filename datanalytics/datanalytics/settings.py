@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'django_registration',
     'widget_tweaks',
     'homepage.apps.HomepageConfig',
@@ -138,7 +139,10 @@ AUTHENTICATION_BACKENDS = ['users.backends.EmailBackend']
 
 LOGIN_REDIRECT_URL = '/'
 
-ACCOUNT_ACTIVATION_DAYS = 1
+ACCOUNT_ACTIVATION_DAYS = 3
+REGISTRATION_AUTO_LOGIN = True
+REGISTRATION_DEFAULT_FROM_EMAIL = 'noreply@datanalytics.com'
+REGISTRATION_EMAIL_SUBJECT_PREFIX = '[Datanalytics] '
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = getenv('EMAIL_HOST')
@@ -149,6 +153,8 @@ EMAIL_HOST_USER = getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = f'My Domain <{EMAIL_HOST_USER}>'
 
+SITE_ID = 1
+
 MEDIA_ROOT = path.join(BASE_DIR, 'gizmo')
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -158,3 +164,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# use env variable
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000'] 

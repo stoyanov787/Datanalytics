@@ -1,1 +1,14 @@
-Body
+Hello {{ user.username }},
+
+Thank you for registering to Datanalytics. To activate your account, please follow the instructions below:
+
+1. Visit the activation page: {{ site.domain }}{% url 'django_registration_activate' %}
+2. Enter the following activation key:
+   {{ activation_key }}
+
+This activation key will expire in {{ expiration_days }} days.
+
+If you did not register for this account, please ignore this email.
+
+Best regards,  
+Datanalytics Team

@@ -1,13 +1,19 @@
-<!DOCTYPE html>
-<html>
-  <meta charset="utf-8" />
-  <head>
-    <title></title>
-  </head>
-  <body>
-    <form method="post">
-      {% csrf_token %} {{form}}
-      <input type="submit" value="Submit" />
-    </form>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="fw-bold mb-5">Verify your email</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-4 text-center">
+                <form method="post">
+                  {% csrf_token %} {{form}}
+                  <button type="submit" class="btn btn-success btn-lg mt-3">Verify</button>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
