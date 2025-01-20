@@ -108,23 +108,169 @@ def handle_task_response(task_result: AsyncResult) -> Dict[str, Any]:
             'error': f'Error processing task result: {str(e)}'
         }
 
-@login_required
-def param(request):
-    return render(request, 'param/param.html', {
-        'form': ParamForm(request=request)
-    })
+import json
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from .forms import ParamForm
+from .models import Project
 
+@login_required
+@require_http_methods(['GET', 'POST'])
+def param(request):
+    print("\n\n\n\n\nYeeeesss\n\n\n\n")
+    if request.method == 'GET':
+        return render(request, 'param/param.html', {
+            'form': ParamForm(request=request)
+        })
+    else:
+        form = ParamForm(request.POST, request=request)
+        if form.is_valid():
+            project_name = request.POST.get("project_name")
+            if not project_name:
+                return redirect('param')
+
+            # Create the params dictionary from form data
+            params = {
+                "criterion_column": form.cleaned_data['criterion_column'],
+                "missing_treatment": {"Info": "Missing"},
+                "observation_date_column": form.cleaned_data['observation_date_column'],
+                "secondary_criterion_columns": form.cleaned_data['secondary_criterion_columns'],
+                "t1df": form.cleaned_data['t1df'],
+                "t2df": form.cleaned_data['t2df'],
+                "t3df": form.cleaned_data['t3df'],
+                "periods_to_exclude": form.cleaned_data['periods_to_exclude'],
+                "columns_to_exclude": form.cleaned_data['columns_to_exclude'],
+                "lr_features": [],
+                "lr_features_to_include": [],
+                "trees_features_to_include": [],
+                "trees_features_to_exclude": [],
+                "cut_offs": {
+                    "xgb": [],
+                    "lr": [],
+                    "dt": [],
+                    "rf": []
+                },
+                "under_sampling": 1,
+                "optimal_binning_columns": form.cleaned_data['optimal_binning_columns'],
+                "main_table": "input.csv",
+                "columns_to_include": [],
+                "custom_calculations": [],
+                "additional_tables": []
+            }
+
+            param_file = os.path.abspath(os.path.join(
+                settings.MEDIA_ROOT, 'params', f"params_{request.user.get_username()}_{project_name}.json"
+            ))
+
+            # Save the params as JSON file
+            with open(param_file, 'w') as f:
+                json.dump(params, f, indent=4)
+
+            return redirect('projects')
+        else:
+            return render(request, 'param/param.html', {
+                'form': form
+            })
+        
 @login_required
 def observation_date_column_choice(request):
     return render(request, 'param/dependent_fields.html', {
         'form': ParamForm(request=request)
     })
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from .forms import ProjectForm, ParamForm
+from .models import Project
+from .tasks import data_preparation, train_and_evaluate, get_latest_session_id, generate_sweetviz_report
+import pandas as pd
+from celery.result import AsyncResult
+import logging
+import os
+import json
+from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def project_creation(request):
-    return render(request, 'project_creation.html', {
-        'form': ProjectForm()
+    if request.method == 'POST':
+        # Pass user through kwargs
+        form = ProjectForm(data=request.POST, files=request.FILES, user=request.user)
+        if form.is_valid():
+            try:
+                project = form.save()
+                messages.success(request, 'Project created successfully!')
+                return redirect(f'/projects/project/params/?project_name={project.name}')
+            except Exception as e:
+                messages.error(request, f'Error creating project: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        # Pass user through kwargs
+        form = ProjectForm(user=request.user)
+    
+    return render(request, 'projects/project_creation.html', {
+        'form': form,
+        'title': 'Create New Project'
     })
+
+@login_required
+def project_params(request):
+    project_name = request.GET.get('project_name')
+    if not project_name:
+        messages.error(request, 'Project name is required')
+        return redirect('projects')
+    
+    project = get_object_or_404(Project, name=project_name, user=request.user)
+    
+    if request.method == 'POST':
+        form = ParamForm(data=request.POST, project=project)
+        if form.is_valid():
+            try:
+                form.save(project)
+                messages.success(request, 'Parameters saved successfully!')
+                return redirect('projects')
+            except Exception as e:
+                messages.error(request, f'Error saving parameters: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = ParamForm(project=project)
+    
+    return render(request, 'projects/project_params.html', {
+        'form': form,
+        'project': project,
+        'title': 'Configure Parameters'
+    })
+
+@login_required
+@require_http_methods(['GET'])
+def get_date_values(request):
+    """AJAX endpoint to get unique values from a date column"""
+    try:
+        column = request.GET.get('column')
+        project_name = request.GET.get('project_name')
+        
+        if not column or not project_name:
+            return JsonResponse({'error': 'Missing required parameters'}, status=400)
+            
+        project = get_object_or_404(Project, name=project_name, user=request.user)
+        df = pd.read_csv(project.input_dataframe)
+        
+        dates = sorted(df[column].unique().tolist())
+        return JsonResponse({'dates': dates})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def projects(request):
@@ -358,3 +504,24 @@ def download_sweetviz(request):
         response = HttpResponse(f.read(), content_type='text/html')
         response['Content-Disposition'] = f'attachment; filename="{project_name}.html"'
         return response
+    
+
+@login_required
+@require_http_methods(['GET'])
+def show_report(request):
+    project_name = request.GET.get('project_name')
+    if not project_name:
+        return JsonResponse({'error': 'Project name is required'}, status=400)
+    
+    report_path = os.path.join(
+        settings.MEDIA_ROOT, 
+        'reports', 
+        request.user.get_username(),
+        f"{request.user.get_username()}_{project_name}.html"
+    )
+    
+    if not os.path.exists(report_path):
+        return JsonResponse({'error': 'Report not found'}, status=404)
+    
+    with open(report_path, 'r', encoding='utf-8') as f:
+        return HttpResponse(f.read(), content_type='text/html')

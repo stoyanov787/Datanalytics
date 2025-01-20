@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load static %}
+{% load widget_tweaks %}
+
+<div class="container-fluid mt-5">
+    <h1 class="fw-bold mb-5">Create New Project</h1>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <img class="card-img-top mb-4" src="{% static 'create_project.svg' %}" alt="Create Project" style="width: 128px !important;">
+                    
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Project Name -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label">Project Name</label>
+                            {% render_field form.name class="form-control" placeholder="Enter project name" %}
+                            {% if form.name.errors %}
+                            <div class="alert alert-danger mt-2">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Project name can only contain letters, numbers, underscores, and hyphens.
+                                Must be at least 3 characters long.
+                            </div>
+                        </div>
+
+                        <!-- CSV Upload Guide -->
+                        <div class="alert alert-info mb-4">
+                            <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>CSV File Requirements</h5>
+                            <ul class="mb-0">
+                                <li>File must be in CSV format</li>
+                                <li>All columns must have headers</li>
+                                <li>Data should be consistently formatted</li>
+                                <li>Common separators: comma (,), semicolon (;), or tab</li>
+                            </ul>
+                        </div>
+
+                        <!-- Input Dataset (CSV) -->
+                        <div class="mb-4">
+                            <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>
+                            {% render_field form.input_dataframe class="form-control" %}
+                            {% if form.input_dataframe.errors %}
+                            <div class="alert alert-danger mt-2">
+                                {% for error in form.input_dataframe.errors %}
+                                {{ error|safe }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.input_dataframe.help_text }}</div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg">Create Project</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+
+        // File input validation
+        const fileInput = document.getElementById('id_input_dataframe');
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    fileInput.value = '';
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-danger mt-2';
+                    alert.textContent = 'Please select a CSV file.';
+                    fileInput.parentElement.appendChild(alert);
+                    setTimeout(() => alert.remove(), 5000);
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock content %}

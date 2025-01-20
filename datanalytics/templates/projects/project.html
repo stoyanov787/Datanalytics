@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 {% if report_exists %}
                     <button onclick="window.open('/projects/download_sweetviz?project_name={{ project.name }}')" 
                             class="green-button btn btn-success mb-3">Download Report</button>
-                    <button onclick="window.open('/media/reports/{{ request.user.username }}/{{ request.user.username }}_{{ project.name }}.html', '_blank')" 
+                    <button onclick="window.open('/projects/reports/show?project_name={{ project.name }}', '_blank')" 
                             class="green-button btn btn-success mb-3">Show Report</button>
                     <button onclick="analyzeSweetviz()" 
                             class="green-button btn btn-success mb-3" 
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button onclick="window.open('/projects/download_sweetviz?project_name={{ project.name }}')" 
                             class="green-button btn btn-success mb-3" 
                             disabled>Download Report</button>
-                    <button onclick="window.open('/media/reports/{{ request.user.username }}/{{ request.user.username }}_{{ project.name }}.html', '_blank')" 
+                    <button onclick="window.open('/projects/reports/show?project_name={{ project.name }}', '_blank')" 
                             class="green-button btn btn-success mb-3" 
                             disabled>Show Report</button>
                     <button onclick="analyzeSweetviz()" 

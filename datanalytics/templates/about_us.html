@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load static %}
+
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Hero Section -->
+            <section class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-success mb-4">Data Analytics Platform</h1>
+                <p class="lead text-muted">Empowering Postbank's Data Analytics Department with Advanced AI Solutions</p>
+            </section>
+
+            <!-- Main Content -->
+            <div class="row g-4">
+                <!-- Platform Overview -->
+                <div class="col-md-12 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{% static 'analysis.svg' %}" alt="Analysis" class="me-3" style="width: 48px; height: 48px;">
+                                <h2 class="card-title h4 mb-0">Platform Overview</h2>
+                            </div>
+                            <p class="card-text">
+                                Welcome to Datanalytics - your specialized platform for advanced data analysis and AI-powered predictions. 
+                                Built exclusively for Postbank's Data Analytics Department, this platform streamlines your workflow and 
+                                enhances data-driven decision making.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Features -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{% static 'ai.svg' %}" alt="AI" class="me-3" style="width: 48px; height: 48px;">
+                                <h2 class="card-title h4 mb-0">Gizmo AI</h2>
+                            </div>
+                            <p class="card-text">
+                                Powered by Gizmo, our proprietary AI engine, the platform delivers:
+                            </p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Advanced predictive analytics</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Automated data preparation</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Model training and evaluation</li>
+                                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Results directly in your department's shared folder</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Tools -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{% static 'csv.svg' %}" alt="Data" class="me-3" style="width: 48px; height: 48px;">
+                                <h2 class="card-title h4 mb-0">Analysis Tools</h2>
+                            </div>
+                            <p class="card-text">
+                                Enhance your analysis with integrated tools:
+                            </p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Automated Sweetviz reports</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Interactive data visualizations</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Comprehensive data summaries</li>
+                                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Seamless file management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="col-md-12 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{% static 'create_project.svg' %}" alt="Workflow" class="me-3" style="width: 48px; height: 48px;">
+                                <h2 class="card-title h4 mb-0">How It Works</h2>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                            <span class="h4 mb-0 text-success">1</span>
+                                        </div>
+                                        <h5>Upload Data</h5>
+                                        <p class="small">Upload your dataset and create a new project</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                            <span class="h4 mb-0 text-success">2</span>
+                                        </div>
+                                        <h5>Configure</h5>
+                                        <p class="small">Set parameters for your analysis</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                            <span class="h4 mb-0 text-success">3</span>
+                                        </div>
+                                        <h5>Process</h5>
+                                        <p class="small">Run AI analysis and generate reports</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                            <span class="h4 mb-0 text-success">4</span>
+                                        </div>
+                                        <h5>Access</h5>
+                                        <p class="small">Find results in your department's shared folder</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+{% endblock content %}

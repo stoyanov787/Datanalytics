@@ -1,18 +1,16 @@
 {
-    "criterion_column": "",
+    "criterion_column": "MSENCLI",
+    "observation_date_column": "MSENCLI",
+    "secondary_criterion_columns": "MSENCLI",
+    "t1df": "4201468461",
+    "t2df": "4201468461",
+    "t3df": "4201468461",
+    "periods_to_exclude": [],
+    "columns_to_exclude": [],
+    "optimal_binning_columns": [],
     "missing_treatment": {
         "Info": "Missing"
     },
-    "observation_date_column": "",
-    "secondary_criterion_columns": [
-        "",
-        ""
-    ],
-    "t1df": "",
-    "t2df": "",
-    "t3df": "",
-    "periods_to_exclude": [],
-    "columns_to_exclude": [],
     "lr_features": [],
     "lr_features_to_include": [],
     "trees_features_to_include": [],
@@ -24,8 +22,7 @@
         "rf": []
     },
     "under_sampling": 1,
-    "optimal_binning_columns": [],
-    "main_table": "",
+    "main_table": "input.csv",
     "columns_to_include": [],
     "custom_calculations": [],
     "additional_tables": []
