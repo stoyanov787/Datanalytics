@@ -25,6 +25,9 @@
                             <label for="password" class="form-label">Password</label>
                             <input type="password" class="form-control" id="password" name="password" 
                                 placeholder="Enter password">
+                            <div class="mt-2 text-end">
+                                <a href="{% url 'password_reset' %}" class="text-success">Forgot Password?</a>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <button type="submit" class="btn btn-success w-100">Submit</button>

@@ -16,20 +16,41 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 from django_registration.backends.activation.views import RegistrationView
 from users.forms import CustomUserForm
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('homepage.urls')),
+    
+    # Explicit password reset URLs
+    path('accounts/password_reset/', 
+         auth_views.PasswordResetView.as_view(template_name='registration/password_reset.html'),
+         name='password_reset'),
+    path('accounts/password_reset/done/',
+         auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'),
+         name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/',
+         auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'),
+         name='password_reset_confirm'),
+    path('accounts/reset/done/',
+         auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'),
+         name='password_reset_complete'),
+         
+    # Other auth URLs
+    path('accounts/', include('django.contrib.auth.urls')),
+    
+    # Registration URLs
     path('accounts/register/',
         RegistrationView.as_view(
             form_class=CustomUserForm,
         ),
         name='django_registration_register',
     ),
-    path('accounts/', include('django_registration.backends.activation.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('registration/', include('django_registration.backends.activation.urls')),
+    
+    # App URLs
     path('projects/', include('projects.urls')),
     path('users/', include('users.urls'))
 ]

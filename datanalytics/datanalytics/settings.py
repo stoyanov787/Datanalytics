@@ -144,7 +144,8 @@ REGISTRATION_AUTO_LOGIN = True
 REGISTRATION_DEFAULT_FROM_EMAIL = 'noreply@datanalytics.com'
 REGISTRATION_EMAIL_SUBJECT_PREFIX = '[Datanalytics] '
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'users.email_backend.CeleryEmailBackend'
+CELERY_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = getenv('EMAIL_HOST')
 EMAIL_PORT = int(getenv('EMAIL_PORT'))
 EMAIL_USE_SSL = True
@@ -167,3 +168,36 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # use env variable
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000'] 
+
+CELERY_EMAIL_TASK_CONFIG = {
+    'queue': 'email',
+    'rate_limit': '50/m',  # Limit to 50 emails per minute
+    'max_retries': 3,
+    'default_retry_delay': 300,  # 5 minutes
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'django.log',
+        }
+    },
+    'loggers': {
+        'users.email_backend': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
