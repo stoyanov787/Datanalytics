@@ -25,48 +25,44 @@
                     <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                         {% csrf_token %}
                         
-                        <!-- Project Name -->
-                        <div class="mb-4">
-                            <label for="id_name" class="form-label">Project Name</label>
-                            {% render_field form.name class="form-control" placeholder="Enter project name" %}
-                            {% if form.name.errors %}
-                            <div class="alert alert-danger mt-2">
-                                {% for error in form.name.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            <div class="form-text">
-                                Project name can only contain letters, numbers, underscores, and hyphens.
-                                Must be at least 3 characters long.
-                            </div>
-                        </div>
+                        <!-- Project Name Input -->
+<div class="mb-4">
+    <label for="id_name" class="form-label">Project Name</label>
+    <input type="text" 
+           name="name" 
+           class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+           id="id_name" 
+           value="{{ form.name.value|default:'' }}"
+           placeholder="Enter project name">
+    {% if form.name.errors %}
+        <div class="invalid-feedback">
+            {% for error in form.name.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="form-text">
+        Project name can only contain letters, numbers, underscores, and hyphens.
+        Must be at least 3 characters long.
+    </div>
+</div>
 
-                        <!-- CSV Upload Guide -->
-                        <div class="alert alert-info mb-4">
-                            <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>CSV File Requirements</h5>
-                            <ul class="mb-0">
-                                <li>File must be in CSV format</li>
-                                <li>All columns must have headers</li>
-                                <li>Data should be consistently formatted</li>
-                                <li>Common separators: comma (,), semicolon (;), or tab</li>
-                            </ul>
-                        </div>
-
-                        <!-- Input Dataset (CSV) -->
-                        <div class="mb-4">
-                            <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>
-                            {% render_field form.input_dataframe class="form-control" %}
-                            {% if form.input_dataframe.errors %}
-                            <div class="alert alert-danger mt-2">
-                                {% for error in form.input_dataframe.errors %}
-                                {{ error|safe }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.input_dataframe.help_text }}</div>
-                        </div>
-
+<!-- Input Dataset (CSV) -->
+<div class="mb-4">
+    <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>
+    <input type="file" 
+           name="input_dataframe" 
+           class="form-control {% if form.input_dataframe.errors %}is-invalid{% endif %}"
+           id="id_input_dataframe">
+    {% if form.input_dataframe.errors %}
+        <div class="invalid-feedback">
+            {% for error in form.input_dataframe.errors %}
+                {{ error|safe }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="form-text">{{ form.input_dataframe.help_text }}</div>
+</div>
                         <!-- Submit Button -->
                         <div class="text-center">
                             <button type="submit" class="btn btn-success btn-lg">Create Project</button>

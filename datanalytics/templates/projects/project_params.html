@@ -15,72 +15,332 @@
 
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
+                        
+                        <!-- Key Columns Section -->
+                        <h4 class="mb-3">Key Columns</h4>
                         <div class="mb-3">
-                            {{ form.criterion_column.label_tag }}
-                            {% render_field form.criterion_column class="form-select" %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.observation_date_column.label_tag }}
-                            {% render_field form.observation_date_column class="form-select" %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.secondary_criterion_columns.label_tag }}
-                            {% render_field form.secondary_criterion_columns class="form-select" %}
-                        </div>
-
-                        <div id="dependent-fields">
-                            <div class="mb-3">
-                                {{ form.t1df.label_tag }}
-                                {% render_field form.t1df class="form-select" %}
-                            </div>
-
-                            <div class="mb-3">
-                                {{ form.t2df.label_tag }}
-                                {% render_field form.t2df class="form-select" %}
-                            </div>
-
-                            <div class="mb-3">
-                                {{ form.t3df.label_tag }}
-                                {% render_field form.t3df class="form-select" %}
-                            </div>
-
-                            <div class="mb-3">
-                                {{ form.periods_to_exclude.label_tag }}
-                                <div class="multi-select-container">
-                                    {% for checkbox in form.periods_to_exclude %}
-                                    <div class="form-check">
-                                        {{ checkbox }}
-                                    </div>
+                            <label for="{{ form.criterion_column.id_for_label }}" class="form-label">{{ form.criterion_column.label }}</label>
+                            <select name="{{ form.criterion_column.name }}" 
+                                    id="{{ form.criterion_column.id_for_label }}"
+                                    class="form-select {% if form.criterion_column.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.criterion_column.field.choices %}
+                                    <option value="{{ value }}" {% if form.criterion_column.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.criterion_column.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.criterion_column.errors %}
+                                        {{ error }}
                                     {% endfor %}
                                 </div>
-                            </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            {{ form.columns_to_exclude.label_tag }}
-                            <div class="multi-select-container">
-                                {% for checkbox in form.columns_to_exclude %}
-                                <div class="form-check">
-                                    {{ checkbox }}
-                                </div>
+                            <label for="{{ form.observation_date_column.id_for_label }}" class="form-label">{{ form.observation_date_column.label }}</label>
+                            <select name="{{ form.observation_date_column.name }}"
+                                    id="{{ form.observation_date_column.id_for_label }}"
+                                    class="form-select {% if form.observation_date_column.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.observation_date_column.field.choices %}
+                                    <option value="{{ value }}" {% if form.observation_date_column.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
                                 {% endfor %}
-                            </div>
+                            </select>
+                            {% if form.observation_date_column.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.observation_date_column.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            {{ form.optimal_binning_columns.label_tag }}
-                            <div class="multi-select-container">
-                                {% for checkbox in form.optimal_binning_columns %}
-                                <div class="form-check">
-                                    {{ checkbox }}
-                                </div>
+                            <label for="{{ form.secondary_criterion_columns.id_for_label }}" class="form-label">{{ form.secondary_criterion_columns.label }}</label>
+                            <select name="{{ form.secondary_criterion_columns.name }}"
+                                    id="{{ form.secondary_criterion_columns.id_for_label }}"
+                                    class="form-select {% if form.secondary_criterion_columns.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.secondary_criterion_columns.field.choices %}
+                                    <option value="{{ value }}" {% if form.secondary_criterion_columns.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
                                 {% endfor %}
+                            </select>
+                            {% if form.secondary_criterion_columns.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.secondary_criterion_columns.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Data Treatment Section -->
+                        <h4 class="mb-3 mt-4">Data Treatment</h4>
+                        <div class="mb-3">
+                            <label for="{{ form.missing_treatment.id_for_label }}" class="form-label">{{ form.missing_treatment.label }}</label>
+                            <select name="{{ form.missing_treatment.name }}"
+                                    id="{{ form.missing_treatment.id_for_label }}"
+                                    class="form-select {% if form.missing_treatment.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.missing_treatment.field.choices %}
+                                    <option value="{{ value }}" {% if form.missing_treatment.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.missing_treatment.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.missing_treatment.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.under_sampling.id_for_label }}" class="form-label">{{ form.under_sampling.label }}</label>
+                            <input type="number" step="0.01" min="0" max="1"
+                                   name="{{ form.under_sampling.name }}"
+                                   class="form-control {% if form.under_sampling.errors %}is-invalid{% endif %}"
+                                   id="{{ form.under_sampling.id_for_label }}"
+                                   value="{{ form.under_sampling.value|default:'1' }}">
+                            {% if form.under_sampling.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.under_sampling.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.under_sampling.help_text }}</div>
+                        </div>
+
+                        <!-- Time Periods Section -->
+                        <h4 class="mb-3 mt-4">Time Periods</h4>
+                        <div id="dependent-fields">
+                            <div class="mb-3">
+                                <label for="{{ form.t1df.id_for_label }}" class="form-label">{{ form.t1df.label }}</label>
+                                <select name="{{ form.t1df.name }}"
+                                        id="{{ form.t1df.id_for_label }}"
+                                        class="form-select {% if form.t1df.errors %}is-invalid{% endif %}">
+                                    {% for value, label in form.t1df.field.choices %}
+                                        <option value="{{ value }}" {% if form.t1df.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.t1df.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.t1df.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.t2df.id_for_label }}" class="form-label">{{ form.t2df.label }}</label>
+                                <select name="{{ form.t2df.name }}"
+                                        id="{{ form.t2df.id_for_label }}"
+                                        class="form-select {% if form.t2df.errors %}is-invalid{% endif %}">
+                                    {% for value, label in form.t2df.field.choices %}
+                                        <option value="{{ value }}" {% if form.t2df.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.t2df.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.t2df.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.t3df.id_for_label }}" class="form-label">{{ form.t3df.label }}</label>
+                                <select name="{{ form.t3df.name }}"
+                                        id="{{ form.t3df.id_for_label }}"
+                                        class="form-select {% if form.t3df.errors %}is-invalid{% endif %}">
+                                    {% for value, label in form.t3df.field.choices %}
+                                        <option value="{{ value }}" {% if form.t3df.value == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.t3df.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.t3df.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ form.periods_to_exclude.label }}</label>
+                                <div class="multi-select-container {% if form.periods_to_exclude.errors %}is-invalid{% endif %}" id="periods_to_exclude_container">
+                                    {% for value, label in form.periods_to_exclude.field.choices %}
+                                        <div class="form-check">
+                                            <input type="checkbox" 
+                                                   class="form-check-input" 
+                                                   name="periods_to_exclude" 
+                                                   value="{{ value }}" 
+                                                   id="period_{{ forloop.counter0 }}"
+                                                   {% if value in form.periods_to_exclude.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="period_{{ forloop.counter0 }}">
+                                                {{ label }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.periods_to_exclude.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.periods_to_exclude.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-success btn-lg mb-3 mt-3">Configure</button>
+                        <!-- Cutoffs Section -->
+                        <h4 class="mb-3 mt-4">Model Cutoffs</h4>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Enter values between 0 and 1, separated by commas. Values 0 and 1 will be added automatically.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.xgb_cutoffs.id_for_label }}" class="form-label">{{ form.xgb_cutoffs.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.xgb_cutoffs.name }}" 
+                                   class="form-control cutoff-input {% if form.xgb_cutoffs.errors %}is-invalid{% endif %}"
+                                   id="{{ form.xgb_cutoffs.id_for_label }}" 
+                                   value="{{ form.xgb_cutoffs.value|default:'' }}"
+                                   placeholder="0.2, 0.4, 0.6, 0.8">
+                            {% if form.xgb_cutoffs.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.xgb_cutoffs.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.xgb_cutoffs.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.lr_cutoffs.id_for_label }}" class="form-label">{{ form.lr_cutoffs.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.lr_cutoffs.name }}" 
+                                   class="form-control cutoff-input {% if form.lr_cutoffs.errors %}is-invalid{% endif %}"
+                                   id="{{ form.lr_cutoffs.id_for_label }}" 
+                                   value="{{ form.lr_cutoffs.value|default:'' }}"
+                                   placeholder="0.2, 0.4, 0.6, 0.8">
+                            {% if form.lr_cutoffs.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.lr_cutoffs.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.lr_cutoffs.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.dt_cutoffs.id_for_label }}" class="form-label">{{ form.dt_cutoffs.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.dt_cutoffs.name }}" 
+                                   class="form-control cutoff-input {% if form.dt_cutoffs.errors %}is-invalid{% endif %}"
+                                   id="{{ form.dt_cutoffs.id_for_label }}" 
+                                   value="{{ form.dt_cutoffs.value|default:'' }}"
+                                   placeholder="0.2, 0.4, 0.6, 0.8">
+                            {% if form.dt_cutoffs.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dt_cutoffs.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.dt_cutoffs.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.rf_cutoffs.id_for_label }}" class="form-label">{{ form.rf_cutoffs.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.rf_cutoffs.name }}" 
+                                   class="form-control cutoff-input {% if form.rf_cutoffs.errors %}is-invalid{% endif %}"
+                                   id="{{ form.rf_cutoffs.id_for_label }}" 
+                                   value="{{ form.rf_cutoffs.value|default:'' }}"
+                                   placeholder="0.2, 0.4, 0.6, 0.8">
+                            {% if form.rf_cutoffs.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.rf_cutoffs.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.rf_cutoffs.help_text }}</div>
+                        </div>
+
+                        <!-- Column Selection Section -->
+                        <h4 class="mb-3 mt-4">Column Selection</h4>
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.columns_to_exclude.label }}</label>
+                            <div class="multi-select-container {% if form.columns_to_exclude.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.columns_to_exclude.field.choices %}
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input" 
+                                               name="columns_to_exclude" 
+                                               value="{{ value }}" 
+                                               id="column_exclude_{{ forloop.counter0 }}"
+                                               {% if value in form.columns_to_exclude.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="column_exclude_{{ forloop.counter0 }}">
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.columns_to_exclude.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.columns_to_exclude.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.optimal_binning_columns.label }}</label>
+                            <div class="multi-select-container {% if form.optimal_binning_columns.errors %}is-invalid{% endif %}">
+                                {% for value, label in form.optimal_binning_columns.field.choices %}
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input" 
+                                               name="optimal_binning_columns" 
+                                               value="{{ value }}" 
+                                               id="column_binning_{{ forloop.counter0 }}"
+                                               {% if value in form.optimal_binning_columns.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="column_binning_{{ forloop.counter0 }}">
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.optimal_binning_columns.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.optimal_binning_columns.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100 mt-4">Save Parameters</button>
                     </form>
                 </div>
             </div>
@@ -96,82 +356,218 @@
         border: 1px solid #dee2e6;
         border-radius: 0.375rem;
     }
+    
+    .multi-select-container.is-invalid {
+        border-color: #dc3545;
+        padding-right: calc(1.5em + 0.75rem);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem 1rem;
+    }
+    
+    .form-text {
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #dc3545;
+    }
+
+    .form-check {
+        margin-bottom: 0.5rem;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const observationDateSelect = document.getElementById('{{ form.observation_date_column.id_for_label }}');
+document.addEventListener('DOMContentLoaded', function() {
+    const observationDateSelect = document.getElementById('{{ form.observation_date_column.id_for_label }}');
+    
+    if (observationDateSelect) {
+        observationDateSelect.addEventListener('change', function() {
+            updateDependentFields(this.value);
+        });
         
+        // Initialize on page load if there's a selected value
+        if (observationDateSelect.value) {
+            updateDependentFields(observationDateSelect.value);
+        }
+    }
+});
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const observationDateSelect = document.getElementById('{{ form.observation_date_column.id_for_label }}');
+
+        // Validation functions
+        function validateCutoffs(input) {
+            const value = input.value.trim();
+            
+            if (!value) {
+                input.setCustomValidity('Please enter at least one value');
+                return false;
+            }
+            
+            try {
+                const values = value.split(',').map(v => {
+                    const parsed = parseFloat(v.trim());
+                    if (isNaN(parsed)) throw new Error('Invalid number');
+                    return parsed;
+                });
+                
+                const invalidValues = values.filter(v => v <= 0 || v >= 1);
+                if (invalidValues.length > 0) {
+                    input.setCustomValidity(`Values must be between 0 and 1. Invalid values: ${invalidValues.join(', ')}`);
+                    return false;
+                }
+                
+                for (let i = 0; i < values.length - 1; i++) {
+                    if (values[i] >= values[i + 1]) {
+                        input.setCustomValidity('Values must be in ascending order');
+                        return false;
+                    }
+                }
+                
+                input.setCustomValidity('');
+                return true;
+            } catch (e) {
+                input.setCustomValidity('Please enter valid decimal numbers separated by commas');
+                return false;
+            }
+        }
+
+        // Event listeners for cutoff inputs
+        document.querySelectorAll('.cutoff-input').forEach(input => {
+            input.addEventListener('input', function() {
+                validateCutoffs(this);
+                this.classList.toggle('is-invalid', !this.validity.valid);
+            });
+        });
+
+        // Event listener for observation date select
         if (observationDateSelect) {
-            observationDateSelect.addEventListener('change', function() {
+            observationDateSelect.addEventListener('change', async function() {
                 const selectedColumn = this.value;
-                updateDependentFields(selectedColumn);
+                await updateDependentFields(selectedColumn);
             });
         }
 
-        function updateDependentFields(column) {
-            fetch(`/projects/get-date-values/?column=${encodeURIComponent(column)}&project_name={{ project.name }}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.dates) {
-                        // Update time period dropdowns
-                        updateSelect('{{ form.t1df.id_for_label }}', data.dates);
-                        updateSelect('{{ form.t2df.id_for_label }}', data.dates);
-                        updateSelect('{{ form.t3df.id_for_label }}', data.dates);
-                        
-                        // Update periods to exclude checkboxes
-                        updateCheckboxes('periods_to_exclude', data.dates);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-
-        function updateSelect(selectId, options) {
-            const select = document.getElementById(selectId);
-            if (select) {
-                const currentValue = select.value;
-                select.innerHTML = '';
-                
-                options.forEach(option => {
-                    const opt = document.createElement('option');
-                    opt.value = option;
-                    opt.textContent = option;
-                    if (option === currentValue) {
-                        opt.selected = true;
-                    }
-                    select.appendChild(opt);
-                });
+        // Form submission handler
+        form.addEventListener('submit', function(event) {
+            let isValid = true;
+            
+            document.querySelectorAll('.cutoff-input').forEach(input => {
+                if (!validateCutoffs(input)) {
+                    isValid = false;
+                    input.classList.add('is-invalid');
+                }
+            });
+            
+            if (!form.checkValidity() || !isValid) {
+                event.preventDefault();
+                event.stopPropagation();
+                form.classList.add('was-validated');
             }
-        }
+        });
 
-        function updateCheckboxes(fieldName, options) {
-            const container = document.querySelector(`.multi-select-container:has([name^="${fieldName}"])`);
-            if (container) {
-                container.innerHTML = '';
-                
-                options.forEach((option, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'form-check';
-                    
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.name = `${fieldName}`;
-                    input.value = option;
-                    input.id = `id_${fieldName}_${index}`;
-                    input.className = 'form-check-input';
-                    
-                    const label = document.createElement('label');
-                    label.className = 'form-check-label';
-                    label.htmlFor = input.id;
-                    label.textContent = option;
-                    
-                    div.appendChild(input);
-                    div.appendChild(label);
-                    container.appendChild(div);
-                });
-            }
+        // Initialize validation state
+        if (observationDateSelect && observationDateSelect.value) {
+            updateDependentFields(observationDateSelect.value);
         }
     });
+
+    // Update functions for date-dependent fields
+// Script replacements
+async function updateDependentFields(column) {
+    try {
+        const response = await fetch(`/projects/get-date-values/?column=${encodeURIComponent(column)}&project_name={{ project.name }}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        
+        if (!data.dates || !data.initial_values) {
+            console.error('Invalid data received:', data);
+            return;
+        }
+
+        // Update all date selects
+        const selects = {
+            t1df: document.getElementById('id_t1df'),
+            t2df: document.getElementById('id_t2df'),
+            t3df: document.getElementById('id_t3df')
+        };
+
+        // Clear and repopulate
+        Object.entries(selects).forEach(([key, select]) => {
+            if (select) {
+                select.innerHTML = '';
+                data.dates.forEach(date => {
+                    select.appendChild(new Option(date, date));
+                });
+                select.value = data.initial_values[key];
+            }
+        });
+
+        // Update periods to exclude
+        updatePeriodsToExclude(data.dates);
+    } catch (error) {
+        console.error('Error updating date fields:', error);
+    }
+}
+
+
+function updateTimeSelects(dates, initialValues) {
+    ['t1df', 't2df', 't3df'].forEach(fieldName => {
+        const select = document.getElementById(`id_${fieldName}`);
+        if (select) {
+            select.innerHTML = '';
+            dates.forEach(date => {
+                const option = new Option(date, date);
+                select.add(option);
+            });
+            // Set the value from initialValues
+            select.value = initialValues[fieldName];
+        }
+    });
+}
+
+function updatePeriodsToExclude(dates) {
+    const container = document.querySelector('#periods_to_exclude_container');
+    if (!container) return;
+
+    // Save current selections
+    const currentlyChecked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+
+    // Update checkboxes
+    container.innerHTML = dates.map((date, idx) => `
+        <div class="form-check">
+            <input type="checkbox"
+                   class="form-check-input"
+                   name="periods_to_exclude"
+                   value="${date}"
+                   id="period_${idx}"
+                   ${currentlyChecked.includes(date) ? 'checked' : ''}>
+            <label class="form-check-label" for="period_${idx}">
+                ${date}
+            </label>
+        </div>
+    `).join('');
+}
 </script>
 
-{% endblock %}
+{% endblock content %}

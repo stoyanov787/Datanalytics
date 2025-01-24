@@ -69,39 +69,31 @@ def get_latest_session_id(train_or_eval: str, project_name: str, working_dir: st
 
 @shared_task(bind=True, max_retries=3)
 def data_preparation(self, project_name: str) -> Dict[str, Any]:
-    """
-    Perform data preparation for a given project.
-    
-    :param project_name: Name of the project
-    :return: Dictionary with task result details
-    """
     try:
+        # Get the project by parsing the project name
+        username, proj_name = project_name.split('_', 1)
+        project = Project.objects.get(name=proj_name, user__username=username)
+        
         env = 'gizmo'
         working_dir = os.path.join(os.getcwd(), 'gizmo')
         
-        # Log the start of the task
         logger.info(f"Starting data preparation for project: {project_name}")
         
         command = f'conda run -n {env} python main.py --project {project_name} --data_prep_module standard'
-        
-        # Capture stdout, stderr, and return code
         stdout, stderr, return_code = run_command(command, working_dir)
         
-        # Log command results
         logger.info(f"Data prep command completed with return code: {return_code}")
         
-        # Construct expected output path
+        # Construct and save output path
         output_path = os.path.abspath(os.path.join(
             settings.MEDIA_ROOT, 
             'output_data', 
             project_name
         ))
         
-        # Ensure output directory exists
-        os.makedirs(output_path, exist_ok=True)
-        
-        # Log output path for verification
-        logger.info(f"Output path created: {output_path}")
+        # Update project with prep output path
+        project.prep_output = output_path
+        project.save()
         
         return {
             'status': 'success',
@@ -115,14 +107,9 @@ def data_preparation(self, project_name: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        # Log the full exception
         logger.exception(f"Error in data_preparation for project {project_name}")
-        
-        # If we haven't exhausted retries, retry the task
         if self.request.retries < self.max_retries:
             raise self.retry(exc=e, countdown=5)
-        
-        # Always return a dictionary, even on failure
         return {
             'status': 'failure',
             'project_name': project_name,
@@ -132,40 +119,36 @@ def data_preparation(self, project_name: str) -> Dict[str, Any]:
 
 @shared_task(bind=True, max_retries=3)
 def train_and_evaluate(self, project_name: str) -> Dict[str, Any]:
-    """
-    Perform training and evaluation for a given project.
-    
-    :param project_name: Name of the project
-    :return: Dictionary with task result details
-    """
     try:
+        # Get the project by parsing the project name
+        username, proj_name = project_name.split('_', 1)
+        project = Project.objects.get(name=proj_name, user__username=username)
+        
         env = 'gizmo'
         working_dir = os.path.join(os.getcwd(), 'gizmo')
         
-        # Log the start of the task
         logger.info(f"Starting train and evaluate for project: {project_name}")
         
+        # Run training
         train_command = f'conda run -n {env} python main.py --project {project_name} --train_module standard'
         train_stdout, train_stderr, train_return_code = run_command(train_command, working_dir)
         
-        # Log train results
         logger.info(f"Train command completed with return code: {train_return_code}")
         
+        # Get training session and run evaluation
         session_id = get_latest_session_id("TRAIN", project_name, working_dir)
-        logger.info(f"Latest train session ID: {session_id}")
-        
         eval_command = f'conda run -n {env} python main.py --project {project_name} --eval_module standard --session "{session_id}"'
         eval_stdout, eval_stderr, eval_return_code = run_command(eval_command, working_dir)
         
-        # Log eval results
         logger.info(f"Eval command completed with return code: {eval_return_code}")
         
-        # Get the latest eval session
+        # Get final output path
         eval_session = get_latest_session_id("EVAL", project_name, working_dir)
         output_path = os.path.join(working_dir, 'sessions', eval_session)
         
-        # Ensure output directory exists
-        os.makedirs(output_path, exist_ok=True)
+        # Update project with train/eval output path
+        project.train_eval_output = output_path
+        project.save()
         
         return {
             'status': 'success',
@@ -181,14 +164,9 @@ def train_and_evaluate(self, project_name: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        # Log the full exception
         logger.exception(f"Error in train_and_evaluate for project {project_name}")
-        
-        # If we haven't exhausted retries, retry the task
         if self.request.retries < self.max_retries:
             raise self.retry(exc=e, countdown=5)
-        
-        # Always return a dictionary, even on failure
         return {
             'status': 'failure',
             'project_name': project_name,

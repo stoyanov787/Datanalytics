@@ -115,6 +115,8 @@ from django.views.decorators.http import require_http_methods
 from .forms import ParamForm
 from .models import Project
 
+
+
 @login_required
 @require_http_methods(['GET', 'POST'])
 def param(request):
@@ -255,21 +257,33 @@ def project_params(request):
 @login_required
 @require_http_methods(['GET'])
 def get_date_values(request):
-    """AJAX endpoint to get unique values from a date column"""
     try:
         column = request.GET.get('column')
         project_name = request.GET.get('project_name')
         
         if not column or not project_name:
-            return JsonResponse({'error': 'Missing required parameters'}, status=400)
+            return JsonResponse({'error': 'Missing parameters'}, status=400)
             
         project = get_object_or_404(Project, name=project_name, user=request.user)
         df = pd.read_csv(project.input_dataframe)
         
-        dates = sorted(df[column].unique().tolist())
-        return JsonResponse({'dates': dates})
+        df[column] = pd.to_datetime(df[column])
+        valid_dates = sorted(df[df[column].notna()][column].unique())
+        formatted_dates = [pd.Timestamp(d).strftime('%m/%d/%Y') for d in valid_dates]
         
+        if not formatted_dates:
+            return JsonResponse({'error': 'No valid dates found'}, status=400)
+            
+        return JsonResponse({
+            'dates': formatted_dates,
+            'initial_values': {
+                't1df': formatted_dates[0],
+                't2df': formatted_dates[len(formatted_dates)//2],
+                't3df': formatted_dates[-1]
+            }
+        })
     except Exception as e:
+        logger.exception(f"Error in get_date_values: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
@@ -282,7 +296,6 @@ def projects(request):
         })
 
     project = get_object_or_404(Project, user=request.user, name=project_name)
-    full_project_name = f"{request.user.get_username()}_{project_name}"
     
     # Get active task IDs from session
     prep_task_id = request.session.get(f'prep_task_{project_name}')
@@ -291,51 +304,16 @@ def projects(request):
     # Check task statuses
     prep_status = None
     train_eval_status = None
-    prep_output_path = None
-    train_eval_output_path = None
-    
-    working_dir = os.path.join(os.getcwd(), 'gizmo')
     
     if prep_task_id:
         result = AsyncResult(prep_task_id)
         if result.status in ['PENDING', 'STARTED', 'RETRY']:
             prep_status = 'running'
-        elif result.status == 'SUCCESS':
-            # For prep tasks, use the output_data directory
-            prep_output_path = os.path.abspath(os.path.join(
-                settings.MEDIA_ROOT, 'output_data', full_project_name
-            ))
             
     if train_eval_task_id:
         result = AsyncResult(train_eval_task_id)
         if result.status in ['PENDING', 'STARTED', 'RETRY']:
             train_eval_status = 'running'
-        elif result.status == 'SUCCESS':
-            # For train/eval tasks, get latest eval session
-            eval_session = get_latest_session_id("EVAL", full_project_name, working_dir)
-            train_eval_output_path = os.path.join(working_dir, 'sessions', eval_session)
-
-    # If paths don't exist from task results, try to construct them from filesystem
-    if not prep_output_path:
-        potential_prep_path = os.path.abspath(os.path.join(
-            settings.MEDIA_ROOT, 'output_data', full_project_name
-        ))
-        if os.path.exists(potential_prep_path):
-            prep_output_path = potential_prep_path
-
-    if not train_eval_output_path:
-        eval_session = get_latest_session_id("EVAL", full_project_name, working_dir)
-        potential_eval_path = os.path.join(working_dir, 'sessions', eval_session)
-        if os.path.exists(potential_eval_path) and eval_session != "latest":
-            train_eval_output_path = potential_eval_path
-
-    report_path = os.path.join(
-        settings.MEDIA_ROOT, 
-        'reports', 
-        request.user.get_username(),
-        f"{request.user.get_username()}_{project_name}.html"
-    )
-    report_exists = os.path.exists(report_path)
     
     # Get Sweetviz task status
     sweetviz_task_id = request.session.get(f'sweetviz_task_{project_name}')
@@ -347,13 +325,13 @@ def projects(request):
     
     return render(request, 'projects/project.html', {
         'project': project,
-        'prep_output_path': prep_output_path,
-        'train_eval_output_path': train_eval_output_path,
+        'prep_output_path': project.prep_output,
+        'train_eval_output_path': project.train_eval_output,
         'prep_status': prep_status,
         'train_eval_status': train_eval_status,
         'prep_task_id': prep_task_id if prep_status == 'running' else None,
         'train_eval_task_id': train_eval_task_id if train_eval_status == 'running' else None,
-        'report_exists': report_exists,
+        'report_exists': bool(project.sweetviz_report),
         'sweetviz_status': sweetviz_status,
         'sweetviz_task_id': sweetviz_task_id if sweetviz_status == 'running' else None,
     })
