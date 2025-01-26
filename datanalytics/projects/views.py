@@ -11,6 +11,8 @@ from celery.result import AsyncResult
 import logging
 import os
 from typing import Dict, Any
+import json
+from django.contrib import messages
 
 logger = logging.getLogger(__name__)
 
@@ -108,19 +110,44 @@ def handle_task_response(task_result: AsyncResult) -> Dict[str, Any]:
             'error': f'Error processing task result: {str(e)}'
         }
 
-import json
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from .forms import ParamForm
-from .models import Project
+@login_required
+@require_http_methods(['POST'])
+def update_project(request):
+    data = json.loads(request.body)
+    old_name = data.get('old_name')
+    new_name = data.get('new_name')
+    
+    try:
+        # Get project and old username-prefixed name
+        project = get_object_or_404(Project, name=old_name, user=request.user)
 
+        # Update project name
+        project.name = new_name
+        project.save()
+        
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
+@login_required
+@require_http_methods(['POST'])
+def delete_project(request):
+    data = json.loads(request.body)
+    project_name = data.get('project_name')
+    
+    if not project_name:
+        return JsonResponse({'error': 'Missing project name'}, status=400)
+        
+    try:
+        project = get_object_or_404(Project, name=project_name, user=request.user)
+        project.delete()
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 @require_http_methods(['GET', 'POST'])
 def param(request):
-    print("\n\n\n\n\nYeeeesss\n\n\n\n")
     if request.method == 'GET':
         return render(request, 'param/param.html', {
             'form': ParamForm(request=request)
@@ -180,23 +207,6 @@ def observation_date_column_choice(request):
     return render(request, 'param/dependent_fields.html', {
         'form': ParamForm(request=request)
     })
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.views.decorators.http import require_http_methods
-from django.contrib import messages
-from .forms import ProjectForm, ParamForm
-from .models import Project
-from .tasks import data_preparation, train_and_evaluate, get_latest_session_id, generate_sweetviz_report
-import pandas as pd
-from celery.result import AsyncResult
-import logging
-import os
-import json
-from typing import Dict, Any
-
-logger = logging.getLogger(__name__)
 
 @login_required
 def project_creation(request):

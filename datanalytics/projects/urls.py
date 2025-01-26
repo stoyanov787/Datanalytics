@@ -6,6 +6,8 @@ urlpatterns = [
     path('', views.projects, name='projects'),
     path('newproject/', views.project_creation, name='project_creation'),
     path('project/params/', views.project_params, name='project_params'),
+    path('update/', views.update_project, name='update_project'),
+    path('delete/', views.delete_project, name='delete_project'),
     
     # Data processing
     path('prep/', views.prep, name='prep'),
