@@ -47,6 +47,26 @@
     </div>
 </div>
 
+<div class="mb-4">
+    <label for="id_description" class="form-label">Project Description</label>
+    <textarea 
+        name="description" 
+        class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+        id="id_description" 
+        rows="4"
+        placeholder="Enter project description">{{ form.description.value|default:'' }}</textarea>
+    {% if form.description.errors %}
+        <div class="invalid-feedback">
+            {% for error in form.description.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="form-text">
+        Provide a detailed description of your project and its objectives.
+    </div>
+</div>
+
 <!-- Input Dataset (CSV) -->
 <div class="mb-4">
     <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>

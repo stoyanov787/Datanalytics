@@ -20,6 +20,7 @@ def get_train_eval_output_path(instance, filename):
 
 class Project(models.Model):
     name = models.CharField(max_length=150)
+    description = models.TextField(help_text="Provide a detailed description of your project")
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     input_dataframe = models.FileField(
         upload_to=get_input_dataframe_file_name, 

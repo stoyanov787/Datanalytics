@@ -16,12 +16,18 @@ def is_date_column(series):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['name', 'input_dataframe']
+        fields = ['name', 'description', 'input_dataframe']
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
+        self.fields['description'].widget.attrs.update({
+            'class': 'form-control',
+            'rows': '4',
+            'placeholder': 'Enter project description'
+        })
+
         self.fields['input_dataframe'].help_text = (
             "Upload a CSV file. Make sure it's properly formatted with consistent columns and separators."
         )
