@@ -1,9 +1,16 @@
+"""Views for the homepage app."""
+
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-def index(request):
-    return render(request, "index.html")
+def index(request: HttpRequest) -> HttpResponse:
+    """Render the homepage."""
+    return render(request, "home/index.html", {
+        "title": "Data Analytics Platform"
+    })
 
-def about_us(request):
-    return render(request, 'about_us.html', {
-        'title': 'About Us - Data Analytics Platform'
+def about_us(request: HttpRequest) -> HttpResponse:
+    """Render the about us page."""
+    return render(request, "home/about_us.html", {
+        "title": "About Us - Data Analytics Platform"
     })

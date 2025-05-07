@@ -1,0 +1,36 @@
+body {
+    background-color: white;
+    font-family: 'Arial', sans-serif;
+    font-weight: normal;
+    text-align: center;
+    font-size: 1.25rem;
+}
+
+.navigation-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: auto;
+}
+
+#logo {
+    color: limegreen !important;
+}
+
+h1 {
+    color: forestgreen;
+}
+
+.nav-link:hover {
+    color: greenyellow;
+}
+
+img {
+    width: 7rem !important;
+    height: auto;
+}
+
+.green-button {
+    width: 15rem !important;
+    height: auto;
+}
