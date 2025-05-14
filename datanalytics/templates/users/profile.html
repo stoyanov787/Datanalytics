@@ -16,7 +16,7 @@
                         {% endfor %}
                     {% endif %}
                     
-                    <form method="post">
+                    <form method="POST" action="{% url 'profile' %}">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -61,7 +61,7 @@
                     <div class="mt-4 border-top pt-3">
                         <h6 class="mb-3">Account Management</h6>
                         <a href="{% url 'password_change' %}" class="btn btn-outline-success w-100 mb-2">Change Password</a>
-                        <form method="post" action="{% url 'logout' %}" class="mt-2">
+                        <form method="POST" action="{% url 'logout' %}" class="mt-2">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-danger w-100">Sign Out</button>
                         </form>

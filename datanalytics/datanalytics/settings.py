@@ -31,6 +31,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORPORATE_EMAIL_DOMAIN = "gmail.com"
+
 
 # Application definition
 
