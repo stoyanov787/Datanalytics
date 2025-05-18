@@ -1,5 +1,6 @@
 name: datanalytics_env
 channels:
+  - defaults
   - conda-forge
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
@@ -7,8 +8,10 @@ dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_gnu
   - asgiref=3.8.1=pyhd8ed1ab_1
+  - blas=1.0=openblas
+  - bottleneck=1.4.2=py311hf4808d0_0
   - bzip2=1.0.8=h4bc722e_7
-  - ca-certificates=2024.12.14=hbcca054_0
+  - ca-certificates=2024.12.31=h06a4308_0
   - django=5.1.4=pyhd8ed1ab_0
   - ld_impl_linux-64=2.43=h712a8e2_2
   - libblas=3.9.0=26_linux64_openblas
@@ -24,29 +27,32 @@ dependencies:
   - liblzma=5.6.3=hb9d3cd8_1
   - libnsl=2.0.1=hd590300_0
   - libopenblas=0.3.28=pthreads_h94d23a6_1
-  - libsqlite=3.47.2=hee588c1_0
+  - libsqlite=3.46.0=hde9e2c9_0
   - libstdcxx=14.2.0=hc0a3c3a_1
-  - libuuid=2.38.1=h0b41bf4_0
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - libuuid=1.41.5=h5eee18b_0
   - libxcrypt=4.4.36=hd590300_1
-  - libzlib=1.3.1=hb9d3cd8_2
+  - libzlib=1.2.13=h4ab18f5_6
   - ncurses=6.5=he02047a_1
-  - numpy=2.2.1=py312h7e784f5_0
+  - numexpr=2.10.1=py311hd28fd6d_0
   - openssl=3.4.0=hb9d3cd8_0
-  - pandas=2.2.3=py312hf9745cd_1
   - pip=24.3.1=pyh8b19718_2
-  - python=3.12.8=h9e4cc4f_1_cpython
+  - python=3.11.11=he870216_0
   - python-dateutil=2.9.0.post0=pyhff2d567_1
   - python-tzdata=2024.2=pyhd8ed1ab_1
-  - python_abi=3.12=5_cp312
+  - python_abi=3.11=2_cp311
   - pytz=2024.1=pyhd8ed1ab_0
   - readline=8.2=h8228510_1
-  - setuptools=75.6.0=pyhff2d567_1
+  - setuptools=72.1.0=py311h06a4308_0
   - six=1.17.0=pyhd8ed1ab_0
+  - sqlite=3.45.3=h5eee18b_0
   - sqlparse=0.5.3=pyhd8ed1ab_0
-  - tk=8.6.13=noxft_h4845f30_101
+  - tk=8.6.14=h39e8969_0
   - typing_extensions=4.12.2=pyha770c72_1
   - tzdata=2024b=hc8b5060_0
   - wheel=0.45.1=pyhd8ed1ab_1
+  - xz=5.4.6=h5eee18b_1
+  - zlib=1.2.13=h4ab18f5_6
   - pip:
       - amqp==5.3.1
       - billiard==4.2.1
@@ -56,11 +62,28 @@ dependencies:
       - click-plugins==1.1.1
       - click-repl==0.3.0
       - confusable-homoglyphs==3.3.1
+      - contourpy==1.3.1
+      - cycler==0.12.1
       - django-registration==5.1.0
       - django-widget-tweaks==1.5.0
+      - fonttools==4.55.3
+      - importlib-resources==6.5.2
+      - jinja2==3.1.5
+      - kiwisolver==1.4.8
       - kombu==5.4.2
+      - markupsafe==3.0.2
+      - matplotlib==3.10.0
+      - numpy==1.23.5
+      - packaging==24.2
+      - pandas==1.5.3
+      - pillow==11.1.0
       - prompt-toolkit==3.0.48
+      - psycopg2-binary==2.9.10
+      - pyparsing==3.2.1
       - python-dotenv==1.0.1
       - redis==5.2.1
+      - scipy==1.15.1
+      - sweetviz==2.1.3
+      - tqdm==4.67.1
       - vine==5.1.0
       - wcwidth==0.2.13
