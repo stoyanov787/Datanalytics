@@ -1,3 +1,5 @@
+"""This module contains Celery tasks for data preparation, training, evaluation, and report generation."""
+
 from celery import shared_task
 import os
 import subprocess
@@ -13,8 +15,7 @@ from django.core.files import File
 logger = get_task_logger(__name__)
 
 def run_command(command: str, working_dir: str) -> Tuple[str, str, int]:
-    """
-    Execute a shell command and return stdout, stderr, and return code.
+    """Execute a shell command and return stdout, stderr, and return code.
     
     :param command: Shell command to execute
     :param working_dir: Working directory for the command
@@ -41,15 +42,14 @@ def run_command(command: str, working_dir: str) -> Tuple[str, str, int]:
     return stdout, stderr, process.returncode
 
 def get_latest_session_id(train_or_eval: str, project_name: str, working_dir: str) -> str:
-    """
-    Get the latest session ID for a given project and task type.
+    """Get the latest session ID for a given project and task type.
     
     :param train_or_eval: Type of session ('TRAIN' or 'EVAL')
     :param project_name: Name of the project
     :param working_dir: Working directory
     :return: Latest session ID or 'latest'
     """
-    sessions_dir = os.path.join(working_dir, 'sessions')
+    sessions_dir = os.path.join(working_dir, "sessions")
     starts_with = f"{train_or_eval}_{project_name}"
 
     logger.info(f"Looking for sessions in directory: {sessions_dir}")
@@ -69,17 +69,22 @@ def get_latest_session_id(train_or_eval: str, project_name: str, working_dir: st
 
 @shared_task(bind=True, max_retries=3)
 def data_preparation(self, project_name: str) -> Dict[str, Any]:
+    """Prepare data for the project.
+
+    :param project_name: Name of the project
+    :return: Dictionary with task result details
+    """
     try:
         # Get the project by parsing the project name
-        username, proj_name = project_name.split('_', 1)
+        username, proj_name = project_name.split("_", 1)
         project = Project.objects.get(name=proj_name, user__username=username)
         
-        env = 'gizmo'
-        working_dir = os.path.join(os.getcwd(), 'gizmo')
+        env = "gizmo"
+        working_dir = os.path.join(os.getcwd(), "gizmo")
         
         logger.info(f"Starting data preparation for project: {project_name}")
         
-        command = f'conda run -n {env} python main.py --project {project_name} --data_prep_module standard'
+        command = f"conda run -n {env} python main.py --project {project_name} --data_prep_module standard"
         stdout, stderr, return_code = run_command(command, working_dir)
         
         logger.info(f"Data prep command completed with return code: {return_code}")
@@ -87,7 +92,7 @@ def data_preparation(self, project_name: str) -> Dict[str, Any]:
         # Construct and save output path
         output_path = os.path.abspath(os.path.join(
             settings.MEDIA_ROOT, 
-            'output_data', 
+            "output_data", 
             project_name
         ))
         
@@ -96,14 +101,14 @@ def data_preparation(self, project_name: str) -> Dict[str, Any]:
         project.save()
         
         return {
-            'status': 'success',
-            'project_name': project_name,
-            'data_prep_module': 'standard',
-            'return_code': return_code,
-            'stdout': stdout,
-            'stderr': stderr,
-            'output_path': output_path,
-            'timestamp': datetime.now().isoformat()
+            "status": "success",
+            "project_name": project_name,
+            "data_prep_module": "standard",
+            "return_code": return_code,
+            "stdout": stdout,
+            "stderr": stderr,
+            "output_path": output_path,
+            "timestamp": datetime.now().isoformat()
         }
         
     except Exception as e:
@@ -111,26 +116,31 @@ def data_preparation(self, project_name: str) -> Dict[str, Any]:
         if self.request.retries < self.max_retries:
             raise self.retry(exc=e, countdown=5)
         return {
-            'status': 'failure',
-            'project_name': project_name,
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            "status": "failure",
+            "project_name": project_name,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
         }
 
 @shared_task(bind=True, max_retries=3)
 def train_and_evaluate(self, project_name: str) -> Dict[str, Any]:
+    """Training and evaluation 
+    
+    :param project_name: Name of the project
+    :return: Dictionary with task result details
+    """
     try:
         # Get the project by parsing the project name
-        username, proj_name = project_name.split('_', 1)
+        username, proj_name = project_name.split("_", 1)
         project = Project.objects.get(name=proj_name, user__username=username)
         
-        env = 'gizmo'
-        working_dir = os.path.join(os.getcwd(), 'gizmo')
+        env = "gizmo"
+        working_dir = os.path.join(os.getcwd(), "gizmo")
         
         logger.info(f"Starting train and evaluate for project: {project_name}")
         
         # Run training
-        train_command = f'conda run -n {env} python main.py --project {project_name} --train_module standard'
+        train_command = f"conda run -n {env} python main.py --project {project_name} --train_module standard"
         train_stdout, train_stderr, train_return_code = run_command(train_command, working_dir)
         
         logger.info(f"Train command completed with return code: {train_return_code}")
@@ -144,23 +154,23 @@ def train_and_evaluate(self, project_name: str) -> Dict[str, Any]:
         
         # Get final output path
         eval_session = get_latest_session_id("EVAL", project_name, working_dir)
-        output_path = os.path.join(working_dir, 'sessions', eval_session)
+        output_path = os.path.join(working_dir, "sessions", eval_session)
         
         # Update project with train/eval output path
         project.train_eval_output = output_path
         project.save()
         
         return {
-            'status': 'success',
-            'project_name': project_name,
-            'train_return_code': train_return_code,
-            'train_stdout': train_stdout,
-            'train_stderr': train_stderr,
-            'eval_return_code': eval_return_code,
-            'eval_stdout': eval_stdout,
-            'eval_stderr': eval_stderr,
-            'output_path': output_path,
-            'timestamp': datetime.now().isoformat()
+            "status": "success",
+            "project_name": project_name,
+            "train_return_code": train_return_code,
+            "train_stdout": train_stdout,
+            "train_stderr": train_stderr,
+            "eval_return_code": eval_return_code,
+            "eval_stdout": eval_stdout,
+            "eval_stderr": eval_stderr,
+            "output_path": output_path,
+            "timestamp": datetime.now().isoformat()
         }
         
     except Exception as e:
@@ -168,10 +178,10 @@ def train_and_evaluate(self, project_name: str) -> Dict[str, Any]:
         if self.request.retries < self.max_retries:
             raise self.retry(exc=e, countdown=5)
         return {
-            'status': 'failure',
-            'project_name': project_name,
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            "status": 'failure',
+            "project_name": project_name,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
         }
 
 @shared_task(bind=True, max_retries=3)
@@ -203,7 +213,7 @@ def generate_sweetviz_report(self, username: str, project_name: str) -> Dict[str
         )
         
         # Create reports directory
-        report_dir = os.path.join(settings.MEDIA_ROOT, 'reports', username)
+        report_dir = os.path.join(settings.MEDIA_ROOT, "reports", username)
         os.makedirs(report_dir, exist_ok=True)
         
         # Save report
@@ -217,25 +227,25 @@ def generate_sweetviz_report(self, username: str, project_name: str) -> Dict[str
         )
         
         # Update project with report
-        with open(report_path, 'rb') as f:
+        with open(report_path, "rb") as f:
             django_file = File(f, name=report_filename)
             project.sweetviz_report = django_file
             project.save()
         
         return {
-            'status': 'success',
-            'project_name': project_name,
-            'report_path': report_path,
-            'timestamp': datetime.now().isoformat()
+            "status": "success",
+            "project_name": project_name,
+            "report_path": report_path,
+            "timestamp": datetime.now().isoformat()
         }
         
     except Project.DoesNotExist:
         logger.error(f"Project not found: {project_name}")
         return {
-            'status': 'failure',
-            'error': f'Project not found: {project_name}',
-            'project_name': project_name,
-            'timestamp': datetime.now().isoformat()
+            "status": "failure",
+            "error": f"Project not found: {project_name}",
+            "project_name": project_name,
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         # Log the full exception
@@ -247,8 +257,8 @@ def generate_sweetviz_report(self, username: str, project_name: str) -> Dict[str
         
         # Always return a dictionary, even on failure
         return {
-            'status': 'failure',
-            'error': str(e),
-            'project_name': project_name,
-            'timestamp': datetime.now().isoformat()
+            "status": "failure",
+            "error": str(e),
+            "project_name": project_name,
+            "timestamp": datetime.now().isoformat()
         }

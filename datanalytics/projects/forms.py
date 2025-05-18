@@ -1,3 +1,5 @@
+"""Forms for the Project app."""
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -5,48 +7,60 @@ import pandas as pd
 import json
 from .models import Project
 
-def is_date_column(series):
+def is_date_column(series: pd.Series) -> bool:
+    """Check if a pandas Series contains date-like values in MM/DD/YYYY format.
+
+    :param series: The pandas Series to check.
+    :type series: pd.Series
+    :return: True if the Series contains date-like values, False otherwise.
+    :rtype: bool
+    """
     try:
-        pd.to_datetime(series, format='%m/%d/%Y', errors='raise')
+        pd.to_datetime(series, format="%m/%d/%Y", errors="raise")
         return True
     except (ValueError, TypeError):
         return False
 
 
 class ProjectForm(forms.ModelForm):
+    """Form for creating and updating projects."""
     class Meta:
+        """Meta class for ProjectForm."""
         model = Project
-        fields = ['name', 'description', 'input_dataframe']
+        fields = ["name", "description", "input_dataframe"]
 
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the ProjectForm."""
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         
-        self.fields['description'].widget.attrs.update({
-            'class': 'form-control',
-            'rows': '4',
-            'placeholder': 'Enter project description'
+        self.fields["description"].widget.attrs.update({
+            "class": "form-control",
+            "rows": "4",
+            "placeholder": "Enter project description"
         })
 
-        self.fields['input_dataframe'].help_text = (
+        self.fields["input_dataframe"].help_text = (
             "Upload a CSV file. Make sure it's properly formatted with consistent columns and separators."
         )
 
-    def clean_name(self):
-        name = self.cleaned_data.get('name')
+    def clean_name(self) -> str:
+        """Validate the project name to ensure it is unique for the user."""
+        name = self.cleaned_data.get("name")
         if self.user and Project.objects.filter(name=name, user=self.user).exists():
-            raise ValidationError('A project with this name already exists.')
+            raise ValidationError("A project with this name already exists.")
         return name
 
-    def clean_input_dataframe(self):
-        input_dataframe = self.cleaned_data.get('input_dataframe')
+    def clean_input_dataframe(self) -> str:
+        """Validate the uploaded CSV file."""
+        input_dataframe = self.cleaned_data.get("input_dataframe")
         if input_dataframe:
             try:
                 # Read the first chunk to check separators
-                chunk = input_dataframe.read(1024).decode('utf-8')
+                chunk = input_dataframe.read(1024).decode("utf-8")
                 input_dataframe.seek(0)
                 
-                if not any(separator in chunk for separator in [',', ';', '\t']):
+                if not any(separator in chunk for separator in [",", ";", "\t"]):
                     raise ValidationError(
                         "The file doesn't appear to be a proper CSV. "
                         "Please ensure it uses common separators (comma, semicolon, or tab)."
@@ -60,7 +74,7 @@ class ProjectForm(forms.ModelForm):
                 except pd.errors.ParserError:
                     input_dataframe.seek(0)
                     try:
-                        df = pd.read_csv(input_dataframe, sep=None, engine='python')
+                        df = pd.read_csv(input_dataframe, sep=None, engine="python")
                     except Exception:
                         raise ValidationError(
                             "Unable to parse the CSV file. Check for:"
@@ -87,20 +101,13 @@ class ProjectForm(forms.ModelForm):
             except UnicodeDecodeError:
                 raise ValidationError("Unable to read the file. Please ensure it's a properly encoded CSV file.")
             except Exception as e:
-                raise ValidationError(f"Error processing file: {str(e)}")
-
-            except UnicodeDecodeError:
-                raise ValidationError(
-                    "Unable to read the file. "
-                    "Please make sure it's a properly encoded CSV file."
-                )
-            except Exception as e:
                 raise ValidationError(
                     f"Error processing the file: {str(e)}. "
                     "Please ensure you're uploading a valid CSV file."
                 )
 
-    def save(self, commit=True):
+    def save(self, commit=True) -> Project:
+        """Save the project instance."""
         project = super().save(commit=False)
         project.user = self.user
         if commit:
@@ -109,15 +116,23 @@ class ProjectForm(forms.ModelForm):
 
 
 class DynamicCutoffField(forms.Field):
+    """Custom form field for dynamic cutoffs."""
     def __init__(self, *args, **kwargs):
-        kwargs['required'] = kwargs.get('required', True)
+        """Initialize the DynamicCutoffField."""
+        kwargs["required"] = kwargs.get("required", True)
         super().__init__(*args, **kwargs)
         self.widget = forms.TextInput(attrs={
-            'placeholder': '0.2, 0.4, 0.6, 0.8',
-            'class': 'form-control cutoff-input'
+            "placeholder": "0.2, 0.4, 0.6, 0.8",
+            "class": "form-control cutoff-input"
         })
 
-    def clean(self, value):
+    def clean(self, value: str) -> list:
+        """Clean the input value and validate it.
+        
+        :param value: The input value from the form.
+        :type value: str
+        :return: A list of float values between 0 and 1.
+        :rtype: list"""
         if not value and self.required:
             raise forms.ValidationError("This field is required. Please enter at least one value.")
             
@@ -125,7 +140,7 @@ class DynamicCutoffField(forms.Field):
             return [0, 1]
 
         try:
-            values = [float(x.strip()) for x in value.split(',')]
+            values = [float(x.strip()) for x in value.split(",")]
             
             invalid_values = [v for v in values if not (0 < v < 1)]
             if invalid_values:
@@ -148,6 +163,8 @@ class DynamicCutoffField(forms.Field):
 
 
 class ParamForm(forms.Form):
+    """Form for setting parameters for the project."""
+
     MISSING_TREATMENT_CHOICES = [
         ("Missing", "Missing"),
         ("column_mean", "Column Mean"),
@@ -230,83 +247,102 @@ class ParamForm(forms.Form):
         help_text="Enter at least one value between 0 and 1, separated by commas (e.g., 0.2, 0.4, 0.6, 0.8)"
     )
 
-    def __init__(self, *args, project=None, **kwargs):
+    def __init__(self, *args, project=None, **kwargs) -> None:
+        """Initialize the ParamForm."""
         super(ParamForm, self).__init__(*args, **kwargs)
         if project:
             self.project = project
             self.df = pd.read_csv(project.input_dataframe)
             
-            date_columns = [col for col in self.df.columns if is_date_column(self.df[col])]
+            # Find columns containing valid dates
+            date_columns = []
+            for col in self.df.columns:
+                try:
+                    # Convert to datetime and check if we have any valid dates
+                    date_series = pd.to_datetime(self.df[col], errors='coerce')
+                    if date_series.notna().any():  # Check if there are any non-NaT values
+                        date_columns.append(col)
+                except:
+                    continue
             
             columns = list(self.df.columns)
             columns_choices = list(zip(columns, columns))
             date_columns_choices = list(zip(date_columns, date_columns))
 
-            self.fields['criterion_column'].choices = columns_choices
-            self.fields['observation_date_column'].choices = date_columns_choices
-            self.fields['secondary_criterion_columns'].choices = columns_choices
-            self.fields['columns_to_exclude'].choices = columns_choices
-            self.fields['optimal_binning_columns'].choices = columns_choices
+            self.fields["criterion_column"].choices = columns_choices
+            self.fields["observation_date_column"].choices = date_columns_choices
+            self.fields["secondary_criterion_columns"].choices = columns_choices
+            self.fields["columns_to_exclude"].choices = columns_choices
+            self.fields["optimal_binning_columns"].choices = columns_choices
 
             # Set initial date-related fields
             if date_columns:
                 # If form is being submitted, use the selected observation date
-                if self.data and self.data.get('observation_date_column'):
-                    date_column = self.data.get('observation_date_column')
+                if self.data and self.data.get("observation_date_column"):
+                    date_column = self.data.get("observation_date_column")
                 else:
                     # On initial load, use the first date column
                     date_column = date_columns[0]
 
-                dates = pd.to_datetime(self.df[date_column].unique())
-                dates = sorted(dates)
-                formatted_dates = [d.strftime('%m/%d/%Y') for d in dates]
+                # Convert to datetime and handle NaT values
+                dates = pd.to_datetime(self.df[date_column].unique(), errors='coerce')
+                
+                # Filter out NaT values before sorting
+                dates = sorted([d for d in dates if pd.notna(d)])
+                
+                # Format dates, skipping NaT values
+                formatted_dates = []
+                for d in dates:
+                    if pd.notna(d):  # Skip NaT values
+                        formatted_dates.append(d.strftime("%m/%d/%Y"))
+                
                 date_choices = list(zip(formatted_dates, formatted_dates))
                 
-                self.fields['t1df'].choices = date_choices
-                self.fields['t2df'].choices = date_choices
-                self.fields['t3df'].choices = date_choices
-                self.fields['periods_to_exclude'].choices = date_choices
+                self.fields["t1df"].choices = date_choices
+                self.fields["t2df"].choices = date_choices
+                self.fields["t3df"].choices = date_choices
+                self.fields["periods_to_exclude"].choices = date_choices
 
                 # Set default values for t1df, t2df, t3df
-                if not self.data:  # Only set defaults on initial load
-                    if formatted_dates:
-                        self.fields['t1df'].initial = formatted_dates[0]
-                        self.fields['t2df'].initial = formatted_dates[len(formatted_dates)//2]
-                        self.fields['t3df'].initial = formatted_dates[-1]
+                if not self.data and formatted_dates:  # Only set defaults on initial load
+                    self.fields["t1df"].initial = formatted_dates[0]
+                    self.fields["t2df"].initial = formatted_dates[len(formatted_dates)//2]
+                    self.fields["t3df"].initial = formatted_dates[-1]
 
-    def clean(self):
+    def clean(self) -> dict:
+        """Validate the form data."""
         cleaned_data = super().clean()
         
-        criterion = cleaned_data.get('criterion_column')
-        secondary = cleaned_data.get('secondary_criterion_columns')
-        obs_date_col = cleaned_data.get('observation_date_column')
+        criterion = cleaned_data.get("criterion_column")
+        secondary = cleaned_data.get("secondary_criterion_columns")
+        obs_date_col = cleaned_data.get("observation_date_column")
         
         # Validate criterion columns are different
         if criterion and secondary and criterion == secondary:
-            self.add_error('secondary_criterion_columns', 
+            self.add_error("secondary_criterion_columns", 
                           "Secondary criterion column cannot be the same as primary criterion")
 
         # Validate key columns are not excluded
-        columns_to_exclude = cleaned_data.get('columns_to_exclude', [])
+        columns_to_exclude = cleaned_data.get("columns_to_exclude", [])
         key_columns = [criterion, obs_date_col, secondary]
         
         for col in key_columns:
             if col and col in columns_to_exclude:
-                self.add_error('columns_to_exclude',
+                self.add_error("columns_to_exclude",
                              f"Cannot exclude key column: {col}")
 
         # Validate date column and time periods
         if obs_date_col and self.df is not None:
             try:
-                date_series = pd.to_datetime(self.df[obs_date_col], errors='raise')
+                date_series = pd.to_datetime(self.df[obs_date_col], errors="raise")
                 if date_series.isna().any():
-                    self.add_error('observation_date_column',
+                    self.add_error("observation_date_column",
                                  "Column contains invalid dates.")
 
                 # Validate time period order
-                t1df = cleaned_data.get('t1df')
-                t2df = cleaned_data.get('t2df')
-                t3df = cleaned_data.get('t3df')
+                t1df = cleaned_data.get("t1df")
+                t2df = cleaned_data.get("t2df")
+                t3df = cleaned_data.get("t3df")
                 
                 if all([t1df, t2df, t3df]):
                     dates = [pd.to_datetime(d) for d in [t1df, t2df, t3df]]
@@ -315,44 +351,45 @@ class ParamForm(forms.Form):
                                      "Time periods must be in chronological order (T1 ≤ T2 ≤ T3)")
 
                 # Validate periods to exclude
-                periods = cleaned_data.get('periods_to_exclude', [])
+                periods = cleaned_data.get("periods_to_exclude", [])
                 for period in periods:
                     try:
                         pd.to_datetime(period)
                     except (ValueError, TypeError):
-                        self.add_error('periods_to_exclude',
+                        self.add_error("periods_to_exclude",
                                      f"Invalid date: {period}")
 
             except (ValueError, TypeError):
-                self.add_error('observation_date_column',
+                self.add_error("observation_date_column",
                              "Selected column must contain valid dates (e.g., YYYY-MM-DD)")
 
         return cleaned_data
 
-    def save(self, project):
+    def save(self, project: Project) -> None:
+        """Save the parameters to a JSON file."""
         cleaned_data = self.cleaned_data
         params = {
-            "criterion_column": cleaned_data['criterion_column'],
-            "missing_treatment": cleaned_data['missing_treatment'],
-            "observation_date_column": cleaned_data['observation_date_column'],
-            "secondary_criterion_columns": cleaned_data['secondary_criterion_columns'],
-            "t1df": cleaned_data['t1df'],
-            "t2df": cleaned_data['t2df'],
-            "t3df": cleaned_data['t3df'],
-            "periods_to_exclude": list(cleaned_data.get('periods_to_exclude', [])),
-            "columns_to_exclude": list(cleaned_data.get('columns_to_exclude', [])),
+            "criterion_column": cleaned_data["criterion_column"],
+            "missing_treatment": cleaned_data["missing_treatment"],
+            "observation_date_column": cleaned_data["observation_date_column"],
+            "secondary_criterion_columns": cleaned_data["secondary_criterion_columns"],
+            "t1df": cleaned_data["t1df"],
+            "t2df": cleaned_data["t2df"],
+            "t3df": cleaned_data["t3df"],
+            "periods_to_exclude": list(cleaned_data.get("periods_to_exclude", [])),
+            "columns_to_exclude": list(cleaned_data.get("columns_to_exclude", [])),
             "lr_features": [],
             "lr_features_to_include": [],
             "trees_features_to_include": [],
             "trees_features_to_exclude": [],
             "cut_offs": {
-                "xgb": cleaned_data['xgb_cutoffs'],
-                "lr": cleaned_data['lr_cutoffs'],
-                "dt": cleaned_data['dt_cutoffs'],
-                "rf": cleaned_data['rf_cutoffs']
+                "xgb": cleaned_data["xgb_cutoffs"],
+                "lr": cleaned_data["lr_cutoffs"],
+                "dt": cleaned_data["dt_cutoffs"],
+                "rf": cleaned_data["rf_cutoffs"]
             },
-            "under_sampling": cleaned_data['under_sampling'],
-            "optimal_binning_columns": list(cleaned_data.get('optimal_binning_columns', [])),
+            "under_sampling": cleaned_data["under_sampling"],
+            "optimal_binning_columns": list(cleaned_data.get("optimal_binning_columns", [])),
             "main_table": "input.csv",
             "columns_to_include": [],
             "custom_calculations": [],
@@ -361,6 +398,6 @@ class ParamForm(forms.Form):
 
         json_content = json.dumps(params, indent=4)
         project.param_file.save(
-            f'params_{project.user.get_username()}_{project.name}.json',
-            ContentFile(json_content.encode('utf-8'))
+            f"params_{project.user.get_username()}_{project.name}.json",
+            ContentFile(json_content.encode("utf-8"))
         )

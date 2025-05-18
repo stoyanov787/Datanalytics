@@ -11,8 +11,9 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <img class="card-img-top mb-4" src="{% static 'create_project.svg' %}" alt="Create Project" style="width: 128px !important;">
-                    
+                    <img class="card-img-top mb-4" src="{% static 'images/create_project.svg' %}" alt="Create Project"
+                        style="width: 128px !important;">
+
                     {% if messages %}
                     {% for message in messages %}
                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
@@ -21,68 +22,62 @@
                     </div>
                     {% endfor %}
                     {% endif %}
-                    
+
                     <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        
+
                         <!-- Project Name Input -->
-<div class="mb-4">
-    <label for="id_name" class="form-label">Project Name</label>
-    <input type="text" 
-           name="name" 
-           class="form-control {% if form.name.errors %}is-invalid{% endif %}"
-           id="id_name" 
-           value="{{ form.name.value|default:'' }}"
-           placeholder="Enter project name">
-    {% if form.name.errors %}
-        <div class="invalid-feedback">
-            {% for error in form.name.errors %}
-                {{ error }}
-            {% endfor %}
-        </div>
-    {% endif %}
-    <div class="form-text">
-        Project name can only contain letters, numbers, underscores, and hyphens.
-        Must be at least 3 characters long.
-    </div>
-</div>
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label">Project Name</label>
+                            <input type="text" name="name"
+                                class="form-control {% if form.name.errors %}is-invalid{% endif %}" id="id_name"
+                                value="{{ form.name.value|default:'' }}" placeholder="Enter project name">
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Project name can only contain letters, numbers, underscores, and hyphens.
+                                Must be at least 3 characters long.
+                            </div>
+                        </div>
 
-<div class="mb-4">
-    <label for="id_description" class="form-label">Project Description</label>
-    <textarea 
-        name="description" 
-        class="form-control {% if form.description.errors %}is-invalid{% endif %}"
-        id="id_description" 
-        rows="4"
-        placeholder="Enter project description">{{ form.description.value|default:'' }}</textarea>
-    {% if form.description.errors %}
-        <div class="invalid-feedback">
-            {% for error in form.description.errors %}
-                {{ error }}
-            {% endfor %}
-        </div>
-    {% endif %}
-    <div class="form-text">
-        Provide a detailed description of your project and its objectives.
-    </div>
-</div>
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label">Project Description</label>
+                            <textarea name="description"
+                                class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                id="id_description" rows="4"
+                                placeholder="Enter project description">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Provide a detailed description of your project and its objectives.
+                            </div>
+                        </div>
 
-<!-- Input Dataset (CSV) -->
-<div class="mb-4">
-    <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>
-    <input type="file" 
-           name="input_dataframe" 
-           class="form-control {% if form.input_dataframe.errors %}is-invalid{% endif %}"
-           id="id_input_dataframe">
-    {% if form.input_dataframe.errors %}
-        <div class="invalid-feedback">
-            {% for error in form.input_dataframe.errors %}
-                {{ error|safe }}
-            {% endfor %}
-        </div>
-    {% endif %}
-    <div class="form-text">{{ form.input_dataframe.help_text }}</div>
-</div>
+                        <!-- Input Dataset (CSV) -->
+                        <div class="mb-4">
+                            <label for="id_input_dataframe" class="form-label">Input Dataset (CSV)</label>
+                            <input type="file" name="input_dataframe"
+                                class="form-control {% if form.input_dataframe.errors %}is-invalid{% endif %}"
+                                id="id_input_dataframe">
+                            {% if form.input_dataframe.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.input_dataframe.errors %}
+                                {{ error|safe }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.input_dataframe.help_text }}</div>
+                        </div>
                         <!-- Submit Button -->
                         <div class="text-center">
                             <button type="submit" class="btn btn-success btn-lg">Create Project</button>
@@ -94,37 +89,6 @@
     </div>
 </div>
 
-<!-- Add Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Form validation
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        });
-
-        // File input validation
-        const fileInput = document.getElementById('id_input_dataframe');
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (!file.name.toLowerCase().endsWith('.csv')) {
-                    fileInput.value = '';
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-danger mt-2';
-                    alert.textContent = 'Please select a CSV file.';
-                    fileInput.parentElement.appendChild(alert);
-                    setTimeout(() => alert.remove(), 5000);
-                }
-            }
-        });
-    });
-</script>
+<script src="{% static 'js/project_creation.js' %}"></script>
 
 {% endblock content %}

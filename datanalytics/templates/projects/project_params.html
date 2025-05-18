@@ -11,7 +11,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <img class="card-img-top mb-3" src="{% static 'analysis.svg' %}" alt="Configure Parameters">
+                    <img class="card-img-top mb-3" src="{% static 'images/analysis.svg' %}" alt="Configure Parameters">
 
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
@@ -348,124 +348,59 @@
     </div>
 </div>
 
-<style>
-    .multi-select-container {
-        max-height: 200px;
-        overflow-y: auto;
-        padding: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-    }
-    
-    .multi-select-container.is-invalid {
-        border-color: #dc3545;
-        padding-right: calc(1.5em + 0.75rem);
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1rem 1rem;
-    }
-    
-    .form-text {
-        margin-top: 0.25rem;
-        font-size: 0.875rem;
-        color: #6c757d;
-    }
-    
-    .invalid-feedback {
-        display: block;
-        margin-top: 0.25rem;
-        font-size: 0.875rem;
-        color: #dc3545;
-    }
-
-    .form-check {
-        margin-bottom: 0.5rem;
-    }
-
-    .card {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    .card-body {
-        padding: 2rem;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/project_params.css' %}">
 
 <script>
+// Integrated JavaScript to handle field dependencies
 document.addEventListener('DOMContentLoaded', function() {
-    const observationDateSelect = document.getElementById('{{ form.observation_date_column.id_for_label }}');
+    const observationDateSelect = document.getElementById('id_observation_date_column');
     
     if (observationDateSelect) {
-        observationDateSelect.addEventListener('change', function() {
-            updateDependentFields(this.value);
-        });
-        
-        // Initialize on page load if there's a selected value
-        if (observationDateSelect.value) {
-            updateDependentFields(observationDateSelect.value);
-        }
-    }
-});
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('form');
-        const observationDateSelect = document.getElementById('{{ form.observation_date_column.id_for_label }}');
-
-        // Validation functions
-        function validateCutoffs(input) {
-            const value = input.value.trim();
+        observationDateSelect.addEventListener('change', async function() {
+            const selectedColumn = this.value;
+            const projectName = "{{ project.name }}";
             
-            if (!value) {
-                input.setCustomValidity('Please enter at least one value');
-                return false;
-            }
+            console.log(`Observation date column changed to: ${selectedColumn}`);
             
             try {
-                const values = value.split(',').map(v => {
-                    const parsed = parseFloat(v.trim());
-                    if (isNaN(parsed)) throw new Error('Invalid number');
-                    return parsed;
-                });
+                const response = await fetch(`/projects/get-date-values/?column=${encodeURIComponent(selectedColumn)}&project_name=${encodeURIComponent(projectName)}`);
                 
-                const invalidValues = values.filter(v => v <= 0 || v >= 1);
-                if (invalidValues.length > 0) {
-                    input.setCustomValidity(`Values must be between 0 and 1. Invalid values: ${invalidValues.join(', ')}`);
-                    return false;
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
                 }
                 
-                for (let i = 0; i < values.length - 1; i++) {
-                    if (values[i] >= values[i + 1]) {
-                        input.setCustomValidity('Values must be in ascending order');
-                        return false;
-                    }
+                const data = await response.json();
+                
+                console.log('Response data:', data);
+                
+                if (data.error) {
+                    console.error('Error from server:', data.error);
+                    return;
                 }
                 
-                input.setCustomValidity('');
-                return true;
-            } catch (e) {
-                input.setCustomValidity('Please enter valid decimal numbers separated by commas');
-                return false;
+                // Update date selects
+                updateTimeSelects(data.dates, data.initial_values);
+                
+                // Update periods to exclude
+                updatePeriodsToExclude(data.dates);
+                
+            } catch (error) {
+                console.error('Error updating date fields:', error);
             }
-        }
-
-        // Event listeners for cutoff inputs
-        document.querySelectorAll('.cutoff-input').forEach(input => {
-            input.addEventListener('input', function() {
-                validateCutoffs(this);
-                this.classList.toggle('is-invalid', !this.validity.valid);
-            });
         });
+    }
 
-        // Event listener for observation date select
-        if (observationDateSelect) {
-            observationDateSelect.addEventListener('change', async function() {
-                const selectedColumn = this.value;
-                await updateDependentFields(selectedColumn);
-            });
-        }
+    // Validation for cutoff inputs
+    document.querySelectorAll('.cutoff-input').forEach(input => {
+        input.addEventListener('input', function() {
+            validateCutoffs(this);
+            this.classList.toggle('is-invalid', !this.validity.valid);
+        });
+    });
 
-        // Form submission handler
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
         form.addEventListener('submit', function(event) {
             let isValid = true;
             
@@ -482,91 +417,115 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.classList.add('was-validated');
             }
         });
-
-        // Initialize validation state
-        if (observationDateSelect && observationDateSelect.value) {
-            updateDependentFields(observationDateSelect.value);
-        }
-    });
-
-    // Update functions for date-dependent fields
-// Script replacements
-async function updateDependentFields(column) {
-    try {
-        const response = await fetch(`/projects/get-date-values/?column=${encodeURIComponent(column)}&project_name={{ project.name }}`);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        
-        if (!data.dates || !data.initial_values) {
-            console.error('Invalid data received:', data);
-            return;
-        }
-
-        // Update all date selects
-        const selects = {
-            t1df: document.getElementById('id_t1df'),
-            t2df: document.getElementById('id_t2df'),
-            t3df: document.getElementById('id_t3df')
-        };
-
-        // Clear and repopulate
-        Object.entries(selects).forEach(([key, select]) => {
-            if (select) {
-                select.innerHTML = '';
-                data.dates.forEach(date => {
-                    select.appendChild(new Option(date, date));
-                });
-                select.value = data.initial_values[key];
-            }
-        });
-
-        // Update periods to exclude
-        updatePeriodsToExclude(data.dates);
-    } catch (error) {
-        console.error('Error updating date fields:', error);
     }
-}
-
+});
 
 function updateTimeSelects(dates, initialValues) {
-    ['t1df', 't2df', 't3df'].forEach(fieldName => {
+    console.log('Updating time selects with dates:', dates);
+    
+    const fields = ['t1df', 't2df', 't3df'];
+    
+    fields.forEach(fieldName => {
         const select = document.getElementById(`id_${fieldName}`);
         if (select) {
+            // Save current selection if possible
+            const currentValue = select.value;
+            
+            // Clear existing options
             select.innerHTML = '';
+            
+            // Add new options
             dates.forEach(date => {
-                const option = new Option(date, date);
-                select.add(option);
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                select.appendChild(option);
             });
-            // Set the value from initialValues
-            select.value = initialValues[fieldName];
+            
+            // Try to restore previous selection or use initial value
+            if (dates.includes(currentValue)) {
+                select.value = currentValue;
+            } else if (initialValues && initialValues[fieldName]) {
+                select.value = initialValues[fieldName];
+            }
+            
+            console.log(`Updated ${fieldName} select with ${dates.length} options`);
+        } else {
+            console.error(`Could not find element with id id_${fieldName}`);
         }
     });
 }
 
 function updatePeriodsToExclude(dates) {
-    const container = document.querySelector('#periods_to_exclude_container');
-    if (!container) return;
-
+    console.log('Updating periods to exclude with dates:', dates);
+    
+    const container = document.getElementById('periods_to_exclude_container');
+    if (!container) {
+        console.error('Could not find periods_to_exclude_container');
+        return;
+    }
+    
     // Save current selections
     const currentlyChecked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
         .map(cb => cb.value);
+    
+    // Create new checkboxes
+    let html = '';
+    dates.forEach((date, idx) => {
+        const isChecked = currentlyChecked.includes(date) ? 'checked' : '';
+        html += `
+            <div class="form-check">
+                <input type="checkbox" 
+                       class="form-check-input" 
+                       name="periods_to_exclude" 
+                       value="${date}" 
+                       id="period_${idx}" 
+                       ${isChecked}>
+                <label class="form-check-label" for="period_${idx}">
+                    ${date}
+                </label>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    console.log(`Updated periods_to_exclude with ${dates.length} checkboxes`);
+}
 
-    // Update checkboxes
-    container.innerHTML = dates.map((date, idx) => `
-        <div class="form-check">
-            <input type="checkbox"
-                   class="form-check-input"
-                   name="periods_to_exclude"
-                   value="${date}"
-                   id="period_${idx}"
-                   ${currentlyChecked.includes(date) ? 'checked' : ''}>
-            <label class="form-check-label" for="period_${idx}">
-                ${date}
-            </label>
-        </div>
-    `).join('');
+function validateCutoffs(input) {
+    const value = input.value.trim();
+    
+    if (!value) {
+        input.setCustomValidity('Please enter at least one value');
+        return false;
+    }
+    
+    try {
+        const values = value.split(',').map(v => {
+            const parsed = parseFloat(v.trim());
+            if (isNaN(parsed)) throw new Error('Invalid number');
+            return parsed;
+        });
+        
+        const invalidValues = values.filter(v => v <= 0 || v >= 1);
+        if (invalidValues.length > 0) {
+            input.setCustomValidity(`Values must be between 0 and 1. Invalid values: ${invalidValues.join(', ')}`);
+            return false;
+        }
+        
+        for (let i = 0; i < values.length - 1; i++) {
+            if (values[i] >= values[i + 1]) {
+                input.setCustomValidity('Values must be in ascending order');
+                return false;
+            }
+        }
+        
+        input.setCustomValidity('');
+        return true;
+    } catch (e) {
+        input.setCustomValidity('Please enter valid decimal numbers separated by commas');
+        return false;
+    }
 }
 </script>
 

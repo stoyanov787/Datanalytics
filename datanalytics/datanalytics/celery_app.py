@@ -1,3 +1,5 @@
+"""Celery configuration for the datanalytics project."""
+
 import os
 from celery import Celery
 
