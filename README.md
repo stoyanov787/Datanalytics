@@ -52,7 +52,7 @@ cp .env.example .env
 # Edit .env file with your configuration
 ```
 
-4. **Ensure that entrypoint.sh is using LF encoding and NOT CRLF:**
+3. **Ensure that entrypoint.sh is using LF encoding and NOT CRLF:**
 - If you are using Windows or the entrypoint.sh is not in LF encoding, encode it in LF standard.
 
 4. **Build and run:**
