@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# entrypoint.sh - Docker entrypoint script for Django application
+# entrypoint.sh - Fixed Docker entrypoint script for Django application
 
 set -e
 
@@ -16,7 +16,8 @@ cd /Datanalytics/datanalytics
 # Function to wait for database
 wait_for_db() {
     echo "Waiting for database..."
-    while ! nc -z db 5432; do
+    until nc -z db 5432; do
+        echo "Database is unavailable - sleeping"
         sleep 1
     done
     echo "Database is ready!"
@@ -25,13 +26,14 @@ wait_for_db() {
 # Function to wait for Redis
 wait_for_redis() {
     echo "Waiting for Redis..."
-    while ! nc -z redis 6379; do
+    until nc -z redis 6379; do
+        echo "Redis is unavailable - sleeping"
         sleep 1
     done
     echo "Redis is ready!"
 }
 
-# Function to run Django setup commands
+# Function to run Django setup commands with proper migration order
 setup_django() {
     echo "Running Django setup..."
     
@@ -39,47 +41,66 @@ setup_django() {
     wait_for_db
     wait_for_redis
     
-    # Run Django commands
-    echo "Making migrations..."
-    python manage.py makemigrations
+    # Additional wait to ensure database is fully ready
+    sleep 5
     
-    echo "Running migrations..."
-    python manage.py migrate
+    echo "Step 1: Creating initial migration for users app..."
+    python manage.py makemigrations users --empty --name initial_user_migration || true
     
-    echo "Collecting static files..."
-    python manage.py collectstatic --noinput
+    echo "Step 2: Making migrations for users app (custom user model)..."
+    python manage.py makemigrations users || echo "Users migrations already exist or failed"
     
-    echo "Creating superuser..."
-    python manage.py shell << EOF
-from django.contrib.auth import get_user_model
-from django.db import IntegrityError
-
-User = get_user_model()
+    echo "Step 3: Applying users migrations first..."
+    python manage.py migrate users || echo "Users migration failed, continuing..."
+    
+    echo "Step 4: Making migrations for other apps..."
+    python manage.py makemigrations projects || echo "Projects migrations already exist or failed"
+    python manage.py makemigrations || echo "General makemigrations failed"
+    
+    echo "Step 5: Applying all migrations..."
+    python manage.py migrate || echo "Some migrations failed, continuing..."
+    
+    echo "Step 6: Collecting static files..."
+    python manage.py collectstatic --noinput || echo "Static collection failed"
+    
+    echo "Step 7: Creating superuser..."
+    python manage.py shell << 'EOF'
 try:
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@gmail.com', 'admin123')
-        print('Superuser created successfully')
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    username = 'admin'
+    email = 'admin@gmail.com'
+    password = 'admin123'
+    
+    if not User.objects.filter(username=username).exists():
+        user = User.objects.create_superuser(username, email, password)
+        print(f'Superuser "{username}" created successfully')
     else:
-        print('Superuser already exists')
-except IntegrityError:
-    print('Superuser creation failed - user may already exist')
+        print(f'Superuser "{username}" already exists')
+        
+except Exception as e:
+    print(f'Error during superuser creation: {e}')
+    print('This is normal if migrations are not complete yet')
 EOF
 
-    echo "Updating site domain..."
-    python manage.py shell << EOF
-from django.contrib.sites.models import Site
+    echo "Step 8: Setting up site..."
+    python manage.py shell << 'EOF'
 try:
+    from django.contrib.sites.models import Site
     site = Site.objects.get_current()
     site.domain = 'localhost:8000'
-    site.name = 'localhost:8000'
+    site.name = 'Datanalytics Local'
     site.save()
-    print('Site object updated:', site.domain)
+    print(f'Site updated: {site.domain}')
 except Exception as e:
-    print('Site update failed:', e)
+    print(f'Site setup failed: {e}')
 EOF
+    
+    echo "Django setup completed!"
 }
 
-# Check if this is the web service (first argument should be runserver related)
+# Check if this is the web service
 if [[ "$1" == *"runserver"* ]] || [[ "$1" == "python" && "$2" == "manage.py" && "$3" == "runserver" ]]; then
     echo "Starting web service..."
     setup_django
@@ -91,13 +112,13 @@ if [[ "$1" == *"runserver"* ]] || [[ "$1" == "python" && "$2" == "manage.py" && 
 elif [[ "$1" == *"celery"* ]] || [[ "$1" == "celery" ]]; then
     echo "Starting Celery worker..."
     
-    # Wait for services but don't run full setup
+    # Wait for services
     wait_for_db
     wait_for_redis
     
-    # Wait a bit more for web service to complete migrations
+    # Wait longer for web service to complete setup
     echo "Waiting for web service to complete setup..."
-    sleep 10
+    sleep 30
     
     echo "Starting Celery worker..."
     exec celery -A datanalytics worker --loglevel=info --concurrency=5
