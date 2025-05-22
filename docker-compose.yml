@@ -1,46 +1,70 @@
-version: '3.8'
-
 services:
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/datanalytics
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-
+  # PostgreSQL Database
   db:
-    image: postgres:13
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME:-datanalytics}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=datanalytics
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Redis for Celery
   redis:
-    image: redis:6
+    image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
+  # Django Web Application
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/Datanalytics
+      - static_volume:/Datanalytics/datanalytics/static
+      - media_volume:/Datanalytics/datanalytics/gizmo
+    environment:
+      - DJANGO_SETTINGS_MODULE=datanalytics.settings
+      - DJANGO_SUPERUSER_PASSWORD=admin123
+    env_file:
+      - ./datanalytics/datanalytics/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+  # Celery Worker with 5 concurrent processes
   celery:
     build: .
-    command: celery -A datanalytics worker -l INFO
     volumes:
-      - .:/app
+      - .:/Datanalytics
+      - media_volume:/Datanalytics/datanalytics/gizmo
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/datanalytics
-      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=datanalytics.settings
+    env_file:
+      - ./datanalytics/datanalytics/.env
     depends_on:
       - web
       - db
       - redis
+    command: ["celery", "-A", "datanalytics", "worker", "--loglevel=info", "--concurrency=5"]
 
 volumes:
   postgres_data:
+  static_volume:
+  media_volume:
