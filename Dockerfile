@@ -48,6 +48,10 @@ EXPOSE 8000
 
 # Copy entrypoint script
 COPY entrypoint.sh /Datanalytics/entrypoint.sh
+
+# Force LF line endings (convert CRLF to LF)
+RUN sed -i 's/\r$//' /Datanalytics/entrypoint.sh
+
 RUN chmod +x /Datanalytics/entrypoint.sh
 
 # Set entrypoint
