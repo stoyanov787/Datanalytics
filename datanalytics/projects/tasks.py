@@ -11,6 +11,32 @@ from django.conf import settings
 from .models import Project
 import sweetviz
 from django.core.files import File
+import numpy as np
+import warnings
+
+# Fix pandas compatibility with Sweetviz
+if not hasattr(pd.DataFrame, 'iteritems'):
+    pd.DataFrame.iteritems = pd.DataFrame.items
+
+# Fix numpy compatibility with Sweetviz  
+if not hasattr(np, 'warnings'):
+    np.warnings = warnings
+
+# Additional numpy compatibility fixes
+if not hasattr(np, 'bool'):
+    np.bool = bool
+if not hasattr(np, 'int'):
+    np.int = int
+if not hasattr(np, 'float'):
+    np.float = float
+if not hasattr(np, 'complex'):
+    np.complex = complex
+
+# Suppress warnings that cause issues
+warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+warnings.filterwarnings('ignore', category=FutureWarning, module='sweetviz')
+
+print("Applied numpy/pandas compatibility fixes for Sweetviz")
 
 logger = get_task_logger(__name__)
 
