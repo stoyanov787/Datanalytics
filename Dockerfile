@@ -1,40 +1,57 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Use official Python base image with conda
+FROM continuumio/miniconda3:latest
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set work directory to the repo root
+WORKDIR /Datanalytics
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    postgresql-client \
+    redis-tools \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and set work directory
-WORKDIR /app
+# Copy environment files first
+COPY environment.yaml .
 
-# Install Conda
-RUN apt-get update && apt-get install -y wget && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm miniconda.sh
-ENV PATH="/opt/conda/bin:${PATH}"
+# Clean conda cache
+RUN conda clean --all -y
 
-# Copy requirements file
-COPY requirements.txt .
+# Create datanalytics_env conda environment
+RUN conda env create -f environment.yaml
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Create gizmo environment directly with conda command (not from file)
+RUN conda create -n gizmo python=3.11 pip -y
 
-# Copy project files
-COPY . .
+# Make conda activate command available
+RUN echo "conda activate datanalytics_env" >> ~/.bashrc
+ENV PATH /opt/conda/envs/datanalytics_env/bin:$PATH
 
-# Create gizmo environment
-RUN conda create -n gizmo python=3.9 -y
+# Copy all project files
+COPY . /Datanalytics/
+
+# Set proper permissions
+RUN chmod +x /Datanalytics/datanalytics/gizmo/main.py
+
+# Verify environments were created
+RUN conda env list
 
 # Expose port
 EXPOSE 8000
 
-# Start command
+# Copy entrypoint script
+COPY entrypoint.sh /Datanalytics/entrypoint.sh
+RUN chmod +x /Datanalytics/entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/Datanalytics/entrypoint.sh"]
+
+# Default command
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
