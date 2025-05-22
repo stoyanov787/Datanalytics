@@ -52,12 +52,15 @@ cp .env.example .env
 # Edit .env file with your configuration
 ```
 
-3. **Build and run:**
+4. **Ensure that entrypoint.sh is using LF encoding and NOT CRLF:**
+- If you are using Windows or the entrypoint.sh is not in LF encoding, encode it in LF standard.
+
+4. **Build and run:**
 ```bash
 docker-compose up --build
 ```
 
-4. **Access the application:**
+5. **Access the application:**
 - Web Interface: http://localhost:8000
 
 ## Features
